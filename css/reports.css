@@ -239,3 +239,52 @@
 .dropdown-menu button:hover {
     background-color: #15803d; 
 }
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.attendance-cards {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  flex: 1;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  text-align: center;
+}
+
+.summary-card span {
+  display: block;
+  font-size: 20px;
+  margin-top: 5px;
+}
+
+.summary-card.green { background: #dcfce7; color: #15803d; }
+.summary-card.yellow { background: #fef9c3; color: #a16207; }
+.summary-card.red { background: #fee2e2; color: #b91c1c; }
+.summary-card.gray { background: #f3f4f6; color: #374151; }
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.report-table th, .report-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+}

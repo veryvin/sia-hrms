@@ -35,85 +35,69 @@
     <main class="main">
   <header class="header">
     <h2>Reports & Analytics</h2>
-    <p>Generate comprehensive HR reports</p>
+    <p>Overview of HR Reports</p>
   </header>
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active">Summary</button>
-    <button class="tab-btn">Attendance</button>
-    <button class="tab-btn">Leave</button>
-    <button class="tab-btn">Payroll</button>
+    <button class="tab-btn active" data-tab="summary">Summary</button>
+    <button class="tab-btn" data-tab="attendance">Attendance</button>
+    <button class="tab-btn" data-tab="leave">Leave</button>
+    <button class="tab-btn" data-tab="payroll">Payroll</button>
   </div>
 
-  <!-- Summary Cards -->
-  <section class="report-grid">
-    <div class="card">
-      <h4>Total Employees</h4>
-      <p>3</p>
-      <small>2 Active</small>
-    </div>
-    <div class="card">
-      <h4>Attendance Rate</h4>
-      <p>0%</p>
-      <small>0 present</small>
-    </div>
-    <div class="card">
-      <h4>Total Payroll</h4>
-      <p>₱0</p>
-      <small>0 processed</small>
+  <!-- Summary Content -->
+  <section id="summary" class="tab-content active">
+    <div class="report-grid">
+      <div class="card"><h4>Total Employees</h4><p>3</p><small>2 Active</small></div>
+      <div class="card"><h4>Attendance Rate</h4><p>0%</p><small>0 present</small></div>
+      <div class="card"><h4>Total Payroll</h4><p>₱0</p><small>0 processed</small></div>
     </div>
   </section>
 
-  <!-- Department Distribution & Leave Overview -->
-  <section class="grid-2">
-    <div class="overview">
-      <h4>Department Distribution</h4>
-
-      <div class="dept">
-        <span>Product Department</span>
-        <div class="progress">
-          <div class="progress-bar green" style="width: 66%;"></div>
-        </div>
-        <small>2 employees</small>
-      </div>
-
-      <div class="dept">
-        <span>Project Management</span>
-        <div class="progress">
-          <div class="progress-bar blue" style="width: 33%;"></div>
-        </div>
-        <small>1 employee</small>
-      </div>
+  <!-- Attendance Content -->
+  <section id="attendance" class="tab-content hidden">
+    <div class="attendance-cards">
+      <div class="summary-card green">Present <span id="presentCount">0</span></div>
+      <div class="summary-card yellow">Late <span id="lateCount">0</span></div>
+      <div class="summary-card red">Absent <span id="absentCount">0</span></div>
+      <div class="summary-card gray">Total Records <span id="totalCount">0</span></div>
     </div>
 
-    <div class="overview">
-      <h4>Leave Request Overview</h4>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>EMPLOYEE</th>
+          <th>PRESENT</th>
+          <th>LATE</th>
+          <th>ABSENT</th>
+          <th>TOTAL HOURS</th>
+        </tr>
+      </thead>
+      <tbody id="attendanceTable"></tbody>
+    </table>
+  </section>
 
-      <div class="status">
-        <span>Pending</span>
-        <div class="progress">
-          <div class="progress-bar yellow" style="width: 50%;"></div>
-        </div>
-        <small>5 pending</small>
-      </div>
+  <!-- Leave Content -->
+  <section id="leave" class="tab-content hidden">
+    <h4>Leave Overview</h4>
+    <table class="report-table">
+      <thead>
+        <tr><th>EMPLOYEE</th><th>TYPE</th><th>STATUS</th><th>DURATION</th></tr>
+      </thead>
+      <tbody id="leaveTable"></tbody>
+    </table>
+  </section>
 
-      <div class="status">
-        <span>Approved</span>
-        <div class="progress">
-          <div class="progress-bar green" style="width: 70%;"></div>
-        </div>
-        <small>7 out of 10 approved</small>
-      </div>
-
-      <div class="status">
-        <span>Rejected</span>
-        <div class="progress">
-          <div class="progress-bar red" style="width: 60%;"></div>
-        </div>
-        <small>6 rejected</small>
-      </div>
-    </div>
+  <!-- Payroll Content -->
+  <section id="payroll" class="tab-content hidden">
+    <h4>Payroll Summary</h4>
+    <table class="report-table">
+      <thead>
+        <tr><th>EMPLOYEE</th><th>PERIOD</th><th>NET SALARY</th><th>STATUS</th></tr>
+      </thead>
+      <tbody id="payrollTable"></tbody>
+    </table>
   </section>
 </main>
 
@@ -128,7 +112,7 @@
   </div>
 </div>
 
-  <script src="../js/dashboard.js"></script>
+  <script src="../js/reports.js"></script>
   <script>
     const userEmail = localStorage.getItem('userEmail') || 'User';
     document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;

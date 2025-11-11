@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Payroll Management | RMT HRMS</title>
-  <link rel="stylesheet" href="../css/payroll.css" />
+  <link rel="stylesheet" href="../css/payroll.css" /
 </head>
 <body>
   <div class="container">
@@ -89,7 +89,47 @@
       </section>
     </main>
   </div>
+<!-- Process Payroll Modal -->
+<div id="payrollModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" id="closeModal">&times;</span>
+    <h3>Add New Employee</h3>
 
-  <script src="attendance.js"></script>
+    <form id="payrollForm">
+      <label for="employee">Employee</label>
+      <input type="text" id="employee" placeholder="Enter employee name" required />
+
+      <div class="row">
+        <div>
+          <label for="periodStart">Period Start</label>
+          <input type="date" id="periodStart" required />
+        </div>
+        <div>
+          <label for="periodEnd">Period End</label>
+          <input type="date" id="periodEnd" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="overtime">Overtime Hours</label>
+          <input type="number" id="overtime" min="0" value="0" />
+        </div>
+        <div>
+          <label for="deductions">Deductions (₱)</label>
+          <input type="number" id="deductions" min="0" value="0" />
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+        <button type="submit" class="btn-submit">Log Attendance</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+  <script src="../js/payroll.js"></script>
+  
 </body>
 </html>

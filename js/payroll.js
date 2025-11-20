@@ -1,3 +1,37 @@
+// ===================================================
+// PAYROLL CALCULATOR (FIXED + WORKING)
+// ===================================================
+const PayrollCalculator = {
+  calculateOTPay: (basicSalary, overtimeHours) => {
+    const hourlyRate = basicSalary / 160; 
+    return overtimeHours * hourlyRate * 1.25; 
+  },
+
+  calculateGrossPay: (basicSalary, otPay, holidayPay, nightDiff, allowances) => {
+    return basicSalary + otPay + holidayPay + nightDiff + allowances;
+  },
+
+  calculateSSS: (basicSalary) => {
+    return basicSalary * 0.05; // 5%
+  },
+
+  calculatePhilHealth: (basicSalary) => {
+    return basicSalary * 0.025; // 2.5%
+  },
+
+  calculatePagIBIG: (basicSalary) => {
+    return 100; // standard PH contribution
+  },
+
+  calculateWithholdingTax: (annualIncome) => {
+    // sample 5% withholding bracket
+    return annualIncome * 0.05 / 12;
+  }
+};
+
+// ===================================================
+// MAIN PAYROLL JS
+// ===================================================
 document.addEventListener("DOMContentLoaded", () => {
   const processBtn = document.getElementById("processBtn");
   const payrollModal = document.getElementById("payrollModal");
@@ -12,9 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let payrollRecords = JSON.parse(localStorage.getItem("payrollRecords")) || [];
 
-  // ============================
-  // REAL-TIME PAYROLL PREVIEW
-  // ============================
+  // ===================================================
+  // REAL-TIME SUMMARY
+  // ===================================================
   const inputFields = [
     "basicSalary",
     "overtimeHours",
@@ -46,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalDeductions = sss + philHealth + pagibig + wtax;
     const netPay = grossPay - totalDeductions;
 
-    // Update UI summary fields
+    // UI update
     document.getElementById("grossPayDisplay").textContent = "₱" + grossPay.toLocaleString("en-PH", { minimumFractionDigits: 2 });
     document.getElementById("sssDisplay").textContent = "₱" + sss.toLocaleString("en-PH", { minimumFractionDigits: 2 });
     document.getElementById("philhealthDisplay").textContent = "₱" + philHealth.toLocaleString("en-PH", { minimumFractionDigits: 2 });
@@ -56,9 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("netPayDisplay").textContent = "₱" + netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 });
   }
 
-  // ============================
+  // ===================================================
   // SHOW MODAL
-  // ============================
+  // ===================================================
   processBtn.addEventListener("click", () => {
     payrollForm.reset();
     updatePayrollSummary();
@@ -76,9 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
   closeDetailsModal.addEventListener("click", () => detailsModal.style.display = "none");
   closeDetailsBtn.addEventListener("click", () => detailsModal.style.display = "none");
 
-  // ============================
-  // FORM SUBMIT
-  // ============================
+  // ===================================================
+  // SUBMIT FORM
+  // ===================================================
   payrollForm.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -130,9 +164,9 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSummaryCards();
   });
 
-  // ============================
-  // RENDER PAYROLL TABLE
-  // ============================
+  // ===================================================
+  // RENDER TABLE
+  // ===================================================
   function renderPayroll() {
     if (payrollRecords.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="10" class="empty">No payroll records found</td></tr>`;
@@ -160,9 +194,9 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
   }
 
-  // ============================
-  // DELETE FUNCTION (FIXED)
-  // ============================
+  // ===================================================
+  // DELETE RECORD
+  // ===================================================
   window.deletePayroll = function(id) {
     if (!confirm("Are you sure you want to delete this payroll record?")) return;
 
@@ -173,9 +207,9 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSummaryCards();
   };
 
-  // ============================
-  // VIEW MODAL DETAILS
-  // ============================
+  // ===================================================
+  // VIEW DETAILS
+  // ===================================================
   window.showPayrollDetails = function(id) {
     const p = payrollRecords.find(x => x.id === id);
     if (!p) return;
@@ -207,7 +241,28 @@ document.addEventListener("DOMContentLoaded", () => {
     detailsModal.style.display = "flex";
   };
 
-  // INITIAL RENDER
+  // ===================================================
+  // SUMMARY CARDS
+  // ===================================================
+  function updateSummaryCards() {
+    let totalPayroll = 0;
+    let totalDeductions = 0;
+
+    payrollRecords.forEach(p => {
+      totalPayroll += p.grossPay;
+      totalDeductions += p.totalDeductions;
+    });
+
+    document.getElementById("totalPayroll").textContent =
+      "₱" + totalPayroll.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+
+    document.getElementById("totalDeductions").textContent =
+      "₱" + totalDeductions.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+
+    document.getElementById("processedCount").textContent =
+      payrollRecords.length;
+  }
+
   renderPayroll();
   updateSummaryCards();
 });

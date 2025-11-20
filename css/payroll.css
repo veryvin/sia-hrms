@@ -49,6 +49,7 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+
 .nav-item {
   text-decoration: none;
   color: #374151;
@@ -68,10 +69,12 @@ body {
   background: #dcfce7;
   color: #15803d;
 }
+
 /* ===== MAIN CONTENT ===== */
 .main {
   flex: 1;
   padding: 40px 50px;
+  overflow-y: auto;
 }
 
 /* Header */
@@ -99,6 +102,7 @@ main header p {
 .stats-summary {
   display: flex;
   gap: 15px;
+  flex-wrap: wrap;
 }
 
 .summary-card {
@@ -106,7 +110,7 @@ main header p {
   padding: 15px 25px;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  width: 150px;
+  min-width: 140px;
   text-align: left;
 }
 
@@ -180,7 +184,40 @@ tbody tr:hover {
 td.empty {
   text-align: center;
   color: #6b7280;
-  padding: 25px;
+  padding: 25 px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.view-btn, .delete-btn {
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.view-btn {
+  background: #dbeafe;
+  color: #0284c7;
+}
+
+.view-btn:hover {
+  background: #bfdbfe;
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.delete-btn:hover {
+  background: #fecaca;
 }
 
 /* ===== USER MENU ===== */
@@ -229,7 +266,8 @@ td.empty {
 .dropdown-menu button:hover {
   background-color: #15803d;
 }
-/* ===== Payroll Modal ===== */
+
+/* ===== MODALS ===== */
 .modal {
   display: none;
   position: fixed;
@@ -241,15 +279,22 @@ td.empty {
   justify-content: center;
   align-items: center;
   z-index: 100;
+  overflow-y: auto;
 }
 
 .modal-content {
   background: #fff;
   border-radius: 12px;
   padding: 25px 30px;
-  width: 420px;
+  width: 90%;
+  max-width: 500px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   position: relative;
+  margin: 20px auto;
+}
+
+.details-modal {
+  max-width: 600px;
 }
 
 .modal-content h3 {
@@ -265,6 +310,11 @@ td.empty {
   right: 15px;
   cursor: pointer;
   font-size: 1.2rem;
+  color: #6b7280;
+}
+
+.close-btn:hover {
+  color: #111827;
 }
 
 .modal-content label {
@@ -272,6 +322,7 @@ td.empty {
   font-size: 0.85rem;
   color: #374151;
   margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .modal-content input {
@@ -280,6 +331,13 @@ td.empty {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.modal-content input:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 .row {
@@ -291,11 +349,82 @@ td.empty {
   flex: 1;
 }
 
+/* Fieldsets */
+fieldset {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+legend {
+  font-weight: 600;
+  color: #111827;
+  padding: 0 8px;
+  font-size: 14px;
+}
+
+.salary-section {
+  background: #f9fafb;
+}
+
+.summary-section {
+  background: #f0fdf4;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-weight: 600;
+  color: #111827;
+}
+
+.deductions-breakdown {
+  margin: 12px 0;
+  padding: 10px;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.deduction-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.deduction-item.total {
+  font-weight: 600;
+  color: #111827;
+  border: none;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 2px solid #22c55e;
+}
+
+.net-pay-section {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #dcfce7;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #15803d;
+  margin-top: 12px;
+}
+
+.net-pay-value {
+  font-size: 18px;
+}
+
 .buttons {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
 .btn-cancel {
@@ -306,6 +435,11 @@ td.empty {
   padding: 8px 14px;
   cursor: pointer;
   font-weight: 500;
+  transition: 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
 }
 
 .btn-submit {
@@ -316,8 +450,41 @@ td.empty {
   padding: 8px 16px;
   cursor: pointer;
   font-weight: 600;
+  transition: 0.2s;
 }
 
 .btn-submit:hover {
   background: #16a34a;
+}
+
+/* Details Modal Content */
+#detailsContent {
+  background: #f9fafb;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.detail-value {
+  color: #111827;
+}
+.modal-content {
+    max-height: 90vh;     /* don't exceed screen height */
+    overflow-y: auto;     /* scroll inside modal */
 }

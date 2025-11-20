@@ -2,5 +2,12 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.83.0",
     "postgres": "^3.4.7"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
 }

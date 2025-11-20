@@ -1,3 +1,15 @@
+const SUPABASE_URL = 'https://giuklazjcvfkpyylmtrm.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdWtsYXpqY3Zma3B5eWxtdHJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MjcyMDUsImV4cCI6MjA3ODUwMzIwNX0.vEOtSgr4rMUxNlfAunhNvG2L0oMloV9x4thi3vz0EPc';
+
+// 2. Initialization: The createClient function is globally available via the CDN.
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+async function handleSignUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: password
+  });
 // Sample existing users (mock database)
 const existingUsers = [
   { email: 'admin@rmt.com', employeeId: 'EMP001' },
@@ -82,4 +94,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-
+}

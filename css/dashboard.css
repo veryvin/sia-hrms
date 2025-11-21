@@ -166,24 +166,22 @@ header p {
     grid-template-columns: 1fr;
   }
 }
-.user-menu {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+
+/* User Menu Container Styling (relative positioning is crucial here) */
+.user-menu-container {
+    position: relative; /* This must be relative for the menu to position correctly */
+    top: 0;
+    right: 0;
+    z-index: 10;
 }
 
-.user-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
+/* Dropdown Menu (Default Hidden State) */
 .dropdown-menu {
-    display: none;
+    /* Use display: none; to hide by default */
+    display: none; 
     position: absolute;
     right: 0;
-    top: 50px;
+    top: 50px; /* Position below the icon */
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -192,23 +190,36 @@ header p {
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
+/* FIX: Active State (This is what shows the menu) */
+.dropdown-menu.active {
+    display: block;
+}
+
 .dropdown-menu p {
-    margin: 0 0 10px 0;
-    font-weight: 500;
-    color: #16a34a;
+  margin: 0 0 10px 0;
+  font-weight: 500;
+  color: #16a34a;
 }
 
 .dropdown-menu button {
-    width: 100%;
-    background-color: #16a34a; 
-    color: #fff;               
-    border: none;             
-    padding: 8px 10px;        
-    border-radius: 6px;       
-    cursor: pointer;          
-    transition: background 0.2s;
+  width: 100%;
+  background-color: #16a34a; 
+  color: #fff; 
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .dropdown-menu button:hover {
-    background-color: #15803d; 
+  background-color: #15803d; 
+}
+
+/* Existing user-menu class is not used in HTML, replacing with user-menu-container */
+.user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
 }

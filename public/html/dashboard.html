@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RMT HRMS Dashboard</title>
+  <link rel="stylesheet" href="/css/dashboard.css" />
+
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">RMT HRMS</h2>
+      <p class="subtitle">Human Resource Management</p>
+      <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+
+<script>
+  const userEmail = localStorage.getItem('userEmail');
+  document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+</script>
+
+      <nav class="nav">
+        <a href="dashboard.html" class="nav-item active">🏠 Dashboard</a>
+        <a href="employee.html" class="nav-item">👥 Employees</a>
+        <a href="attendance.html" class="nav-item">🕒 Attendance</a>
+        <a href="leave.html" class="nav-item">📄 Leave Management</a>
+        <a href="payroll.html" class="nav-item">💲 Payroll</a>
+        <a href="reports.html" class="nav-item">📊 Reports</a>
+      </nav>
+    </aside>
+
+    
+
+<script>
+  document.getElementById('logoutBtn').addEventListener('click', function() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    window.location.href = 'index.html';
+  });
+</script>
+
+
+    <!-- Main Content -->
+    <main class="main">
+      <header>
+        <h1>Dashboard</h1>
+        <p>Overview of HR operations</p>
+      </header>
+
+      <!-- Stats Boxes -->
+      <section class="stats">
+        <div class="card">
+          <h3>Total Employees</h3>
+          <p class="number">3</p>
+          <span>3 Active</span>
+        </div>
+        <div class="card">
+          <h3>Present Today</h3>
+          <p class="number">0</p>
+          <span>Out of 3</span>
+        </div>
+        <div class="card">
+          <h3>Pending Leaves</h3>
+          <p class="number">0</p>
+          <span>Awaiting approval</span>
+        </div>
+        <div class="card">
+          <h3>Monthly Payroll</h3>
+          <p class="number">₱0</p>
+          <span>0 processed</span>
+        </div>
+      </section>
+
+      <!-- Lower Panels -->
+      <section class="bottom-section">
+        <div class="panel">
+          <h3>Recent Leave Requests</h3>
+          <p>No leave requests yet</p>
+        </div>
+        <div class="panel">
+          <h3>Department Distribution</h3>
+          <div class="dept">
+            <span>Product Department</span>
+            <div class="bar"><div class="fill" style="width: 70%;"></div></div>
+            <span class="count">2 employees</span>
+          </div>
+          <div class="dept">
+            <span>Project Management</span>
+            <div class="bar"><div class="fill" style="width: 40%;"></div></div>
+            <span class="count">1 employee</span>
+          </div>
+          <p class="note">📈 All departments operational</p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <!-- User Menu (Top Right) -->
+<div class="user-menu">
+  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+  <div class="dropdown-menu" id="dropdownMenu">
+      <p id="userEmailDisplay"></p>
+      <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+  </div>
+</div>
+
+
+  <script src="../js/dashboard.js"></script>
+  <script>
+  // Redirect back to login if user isn't logged in
+  if (!localStorage.getItem('isLoggedIn')) {
+    window.location.href = 'index.html';
+  }
+</script>
+
+</body>
+</html>

@@ -1,85 +1,155 @@
-// Sample existing users (mock database)
-const existingUsers = [
-  { email: 'admin@rmt.com', employeeId: 'EMP001' },
-  { email: 'juan.delacruz@rmt.com', employeeId: 'EMP002' },
-];
+const SUPABASE_URL = 'https://kfsjewtfpeohdbxyrlcz.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtmc2pld3RmcGVvaGRieHlybGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzU5NjQsImV4cCI6MjA3OTIxMTk2NH0.wrszJi_YC74iYE7oaHvbWBo5JmfY_Enc8VQg5wwggrw';
 
-const form = document.getElementById('createAccountForm');
+// 2. Initialization: The createClient function is globally available via the CDN.
+// Initialize the client using the global access from the CDN
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// DOM Elements for form and messages
+const createAccountForm = document.getElementById('createAccountForm');
 const successMessage = document.getElementById('successMessage');
 const errorMessage = document.getElementById('errorMessage');
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
+// Hide messages initially
+if (successMessage) successMessage.style.display = 'none';
+if (errorMessage) errorMessage.style.display = 'none';
 
-  // Collect inputs
-  const firstName = document.getElementById('firstName').value.trim();
-  const lastName = document.getElementById('lastName').value.trim();
-  const employeeId = document.getElementById('employeeId').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
+/**
+ * Helper function to display messages
+ */
+function showMessage(type, message) {
+    if (!successMessage || !errorMessage) return;
 
-  // Reset messages
-  successMessage.style.display = 'none';
-  errorMessage.style.display = 'none';
-
-  // Validation
-  if (!firstName || !lastName || !employeeId || !email || !password || !confirmPassword) {
-    showError('Please fill out all fields.');
-    return;
-  }
-
-  if (password.length < 6) {
-    showError('Password must be at least 6 characters long.');
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    showError('Passwords do not match.');
-    return;
-  }
-
-  const userExists = existingUsers.some(user => user.email.toLowerCase() === email.toLowerCase());
-  if (userExists) {
-    showError('Email already exists. Try logging in.');
-    return;
-  }
-
-  // Simulate creating new user
-  const newUser = { firstName, lastName, employeeId, email };
-  existingUsers.push(newUser);
-
-  console.log('✅ New User Created:', newUser);
-
-  // After showing success message
-showSuccess('Account created successfully!');
-
-// Redirect back to login page after 2 seconds
-setTimeout(() => {
-  window.location.href = 'index.html';  // Adjust path if needed
-}, 2000); // 2000ms = 2 seconds delay
-
-
-  // Reset form
-  form.reset();
-});
-
-function showError(message) {
-  errorMessage.textContent = '❌ ' + message;
-  errorMessage.style.display = 'block';
+    if (type === 'success') {
+        successMessage.textContent = '✅ ' + message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+    } else {
+        errorMessage.textContent = '❌ Error: ' + message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+    }
 }
 
-function showSuccess(message) {
-  successMessage.textContent = '✅ ' + message;
-  successMessage.style.display = 'block';
-}
-// Redirect "Create an Account" button to createaccount.html
-document.addEventListener('DOMContentLoaded', () => {
-  const createAccountBtn = document.getElementById('createAccountBtn');
-  if (createAccountBtn) {
-    createAccountBtn.addEventListener('click', () => {
-      window.location.href = 'createaccount.html'; // adjust if your file is in another folder
+// ====================================================================
+// 2. FORM SUBMISSION HANDLER
+// ====================================================================
+
+if (createAccountForm) {
+    createAccountForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); 
+        
+        // 1. Get all input values
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const employeeId = document.getElementById('employeeId').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        // 2. Client-Side Validation
+        if (password !== confirmPassword) {
+            showMessage('error', 'Passwords do not match.');
+            return;
+        }
+        if (password.length < 6) {
+            showMessage('error', 'Password must be at least 6 characters long.');
+            return;
+        }
+
+        if (successMessage) successMessage.style.display = 'none';
+        if (errorMessage) errorMessage.style.display = 'none';
+        
+        const submitButton = document.querySelector('.btn-primary');
+        if (submitButton) {
+            submitButton.textContent = 'Signing Up...';
+            submitButton.disabled = true;
+        }
+
+        // ====================================================================
+        // 3. Supabase Sign Up (Auth)
+        // ====================================================================
+        
+        // Create the user in the 'auth.users' table
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: email,
+            password: password
+        });
+
+        if (authError) {
+            showMessage('error', authError.message);
+            if (submitButton) {
+                submitButton.textContent = 'Create Account';
+                submitButton.disabled = false;
+            }
+            return;
+        }
+        
+        const newUser = authData.user;
+
+        // ====================================================================
+        // 4. Insert Profile Data into 'employees' Table (CORRECTED)
+        // ====================================================================
+        
+        if (newUser) {
+            // FIX: Format hire_date as YYYY-MM-DD for the database 'date' type
+            const today = new Date();
+            const hireDateFormatted = today.toISOString().slice(0, 10);
+
+            const insertData = {
+                // REQUIRED AUTH LINK
+                id: newUser.id, 
+                
+                // FORM DATA (MUST NOT BE NULL)
+                first_name: firstName,
+                last_name: lastName,
+                employee_id: employeeId,
+                email: email,
+                
+                // OPTIONAL/DEFAULT FIELDS (Match the clean table schema)
+                phone: null, 
+                hire_date: hireDateFormatted, // Use corrected date format
+                salary: 0, 
+                department_id: null, 
+                role_id: null, 
+                manager_id: null, 
+                is_active: true 
+                
+                // created_at and updated_at are handled automatically by Supabase
+            };
+            
+            // Perform the insert
+            const { error: profileError } = await supabase
+                .from('employees') 
+                .insert(insertData);
+
+            if (profileError) {
+                console.error('Profile Insert Error:', profileError);
+                // The RLS violation should now be fixed by the database drop/recreate steps.
+                showMessage('error', 'Account created, but profile failed to save. Error: ' + profileError.message);
+                
+                if (submitButton) {
+                    submitButton.textContent = 'Create Account';
+                    submitButton.disabled = false;
+                }
+                return;
+            }
+        }
+
+        // ====================================================================
+        // 5. Success and Redirect
+        // ====================================================================
+
+        showMessage('success', 'Account created! Please check your email to confirm your address before logging in.');
+        
+        setTimeout(() => {
+            window.location.href = 'index.html'; 
+        }, 4000); 
+        
+        if (submitButton) {
+            submitButton.textContent = 'Create Account';
+            submitButton.disabled = false;
+        }
+        createAccountForm.reset();
     });
-  }
-});
 }

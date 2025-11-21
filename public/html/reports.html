@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports - RMT HRMS</title>
+  <link rel="stylesheet" href="/css/reports.css" />
+
+</head>
+<body>
+  <script>
+    // Redirect if not logged in
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    }
+  </script>
+
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">RMT HRMS</h2>
+      <p class="subtitle">Human Resource Management</p>
+      <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+
+      <nav class="nav">
+        <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
+        <a href="employee.html" class="nav-item">👥 Employees</a>
+        <a href="attendance.html" class="nav-item">🕒 Attendance</a>
+        <a href="leave.html" class="nav-item">📄 Leave Management</a>
+        <a href="payroll.html" class="nav-item">💲 Payroll</a>
+        <a href="reports.html" class="nav-item active">📊 Reports</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+  <header class="header">
+    <h2>Reports & Analytics</h2>
+    <p>Overview of HR Reports</p>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="summary">Summary</button>
+    <button class="tab-btn" data-tab="attendance">Attendance</button>
+    <button class="tab-btn" data-tab="leave">Leave</button>
+    <button class="tab-btn" data-tab="payroll">Payroll</button>
+  </div>
+
+  <!-- Summary Content -->
+  <section id="summary" class="tab-content active">
+    <div class="report-grid">
+      <div class="card"><h4>Total Employees</h4><p>3</p><small>2 Active</small></div>
+      <div class="card"><h4>Attendance Rate</h4><p>0%</p><small>0 present</small></div>
+      <div class="card"><h4>Total Payroll</h4><p>₱0</p><small>0 processed</small></div>
+    </div>
+  </section>
+
+  <!-- Attendance Content -->
+  <section id="attendance" class="tab-content hidden">
+    <div class="attendance-cards">
+      <div class="summary-card green">Present <span id="presentCount">0</span></div>
+      <div class="summary-card yellow">Late <span id="lateCount">0</span></div>
+      <div class="summary-card red">Absent <span id="absentCount">0</span></div>
+      <div class="summary-card gray">Total Records <span id="totalCount">0</span></div>
+    </div>
+
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>EMPLOYEE</th>
+          <th>PRESENT</th>
+          <th>LATE</th>
+          <th>ABSENT</th>
+          <th>TOTAL HOURS</th>
+        </tr>
+      </thead>
+      <tbody id="attendanceTable"></tbody>
+    </table>
+  </section>
+
+  <!-- Leave Content -->
+  <section id="leave" class="tab-content hidden">
+    <h4>Leave Overview</h4>
+    <table class="report-table">
+      <thead>
+        <tr><th>EMPLOYEE</th><th>TYPE</th><th>STATUS</th><th>DURATION</th></tr>
+      </thead>
+      <tbody id="leaveTable"></tbody>
+    </table>
+  </section>
+
+  <!-- Payroll Content -->
+  <section id="payroll" class="tab-content hidden">
+    <h4>Payroll Summary</h4>
+    <table class="report-table">
+      <thead>
+        <tr><th>EMPLOYEE</th><th>PERIOD</th><th>NET SALARY</th><th>STATUS</th></tr>
+      </thead>
+      <tbody id="payrollTable"></tbody>
+    </table>
+  </section>
+</main>
+
+  </div>
+
+  <!-- User Menu (Top Right) -->
+<div class="user-menu">
+  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+  <div class="dropdown-menu" id="dropdownMenu">
+      <p id="userEmailDisplay"></p>
+      <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+  </div>
+</div>
+
+  <script src="../js/reports.js"></script>
+  <script>
+    const userEmail = localStorage.getItem('userEmail') || 'User';
+    document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+    document.getElementById('userEmailDisplay').textContent = userEmail;
+
+    // User menu toggle
+    const userIcon = document.getElementById('userIcon');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    userIcon.addEventListener('click', () => {
+      dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userEmail');
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

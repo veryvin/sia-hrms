@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payroll Management | RMT HRMS</title>
+  <link rel="stylesheet" href="/css/payroll.css"> 
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">RMT HRMS</h2>
+      <p class="subtitle">Human Resource Management</p>
+      <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+      <!-- User Menu (Top Right) -->
+      <div class="user-menu">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+        <div class="dropdown-menu" id="dropdownMenu">
+          <p id="userEmailDisplay"></p>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+
+      <script>
+        const userEmail = localStorage.getItem('userEmail');
+        document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+      </script>
+
+      <nav class="nav">
+        <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
+        <a href="employee.html" class="nav-item">👥 Employees</a>
+        <a href="attendance.html" class="nav-item">🕒 Attendance</a>
+        <a href="leave.html" class="nav-item">📄 Leave Management</a>
+        <a href="payroll.html" class="nav-item active">💲 Payroll</a>
+        <a href="reports.html" class="nav-item">📊 Reports</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header>
+        <h1>Payroll Management</h1>
+        <p>Process and manage employee payroll with Philippine deductions</p>
+      </header>
+
+      <section class="controls">
+        <div class="stats-summary">
+          <div class="summary-card">
+            <h4>Total Payroll</h4>
+            <p id="totalPayroll">₱0</p>
+          </div>
+          <div class="summary-card">
+            <h4>Total Deductions</h4>
+            <p id="totalDeductions">₱0</p>
+          </div>
+          <div class="summary-card">
+            <h4>Processed</h4>
+            <p id="processedCount">0</p>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <select id="periodSelect">
+            <option>All Periods</option>
+            <option>January 2025</option>
+            <option>February 2025</option>
+          </select>
+          <button class="btn-green" id="processBtn">+ Process Payroll</button>
+        </div>
+      </section>
+
+      <section class="payroll-table">
+        <table>
+          <thead>
+  <tr>
+    <th>EMPLOYEE NO.</th>
+    <th>EMPLOYEE</th>
+    <th>POSITION</th>
+    <th>STATUS</th>
+    <th>PERIOD</th>
+    <th>GROSS PAY</th>
+    <th>DEDUCTIONS</th>
+    <th>NET SALARY</th>
+    <th>ACTIONS</th>
+  </tr>
+</thead>
+          <tbody>
+            <tr>
+              <td colspan="7" class="empty">No payroll records found</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Process Payroll Modal -->
+  <div id="payrollModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h3>Process Employee Payroll</h3>
+
+      <form id="payrollForm">
+
+  <!-- NEW EMPLOYEE INFO FIELDS -->
+  <label for="employeeNo">Employee No.</label>
+  <input type="text" id="employeeNo" placeholder="Enter employee number" required />
+
+  <label for="employeeStatus">Employee Status</label>
+  <input type="text" id="employeeStatus" placeholder="Enter employee status" required />
+
+  <label for="employeePosition">Employee Position</label>
+  <input type="text" id="employeePosition" placeholder="Enter employee position" required />
+
+  <!-- EXISTING FIELDS -->
+  <label for="employee">Employee Name</label>
+  <input type="text" id="employee" placeholder="Enter employee name" required />
+
+  <div class="row">
+    <div>
+      <label for="periodStart">Period Start</label>
+      <input type="date" id="periodStart" required />
+    </div>
+    <div>
+      <label for="periodEnd">Period End</label>
+      <input type="date" id="periodEnd" required />
+    </div>
+  </div>
+
+  <fieldset class="salary-section">
+    <legend>Salary Components</legend>
+    
+    <div class="row">
+      <div>
+        <label for="basicSalary">Basic Salary (₱)</label>
+        <input type="number" id="basicSalary" min="0" step="0.01" value="0" required />
+      </div>
+      <div>
+        <label for="overtimeHours">Overtime Hours</label>
+        <input type="number" id="overtimeHours" min="0" step="0.5" value="0" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="holidayPay">Holiday Pay (₱)</label>
+        <input type="number" id="holidayPay" min="0" step="0.01" value="0" />
+      </div>
+      <div>
+        <label for="nightDifferential">Night Shift Differential (₱)</label>
+        <input type="number" id="nightDifferential" min="0" step="0.01" value="0" />
+      </div>
+    </div>
+
+    <div>
+      <label for="taxableAllowances">Taxable Allowances (₱)</label>
+      <input type="number" id="taxableAllowances" min="0" step="0.01" value="0" />
+    </div>
+  </fieldset>
+
+  <fieldset class="summary-section">
+    <legend>Computation Summary</legend>
+
+    <div class="summary-row">
+      <span>Gross Pay:</span>
+      <span id="grossPayDisplay">₱0.00</span>
+    </div>
+
+    <div class="deductions-breakdown">
+      <p style="font-weight:600;margin-bottom:8px;">Deductions Breakdown:</p>
+      <div class="deduction-item">
+        <span>SSS (5%):</span>
+        <span id="sssDisplay">₱0.00</span>
+      </div>
+      <div class="deduction-item">
+        <span>PhilHealth (2.5%):</span>
+        <span id="philhealthDisplay">₱0.00</span>
+      </div>
+      <div class="deduction-item">
+        <span>Pag-IBIG:</span>
+        <span id="pagibigDisplay">₱0.00</span>
+      </div>
+      <div class="deduction-item">
+        <span>Withholding Tax:</span>
+        <span id="withholdingtaxDisplay">₱0.00</span>
+      </div>
+      <div class="deduction-item total">
+        <span>Total Deductions:</span>
+        <span id="totalDeductionsDisplay">₱0.00</span>
+      </div>
+    </div>
+
+    <div class="net-pay-section">
+      <span>Net Pay:</span>
+      <span id="netPayDisplay" class="net-pay-value">₱0.00</span>
+    </div>
+  </fieldset>
+
+  <div class="buttons">
+    <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+    <button type="submit" class="btn-submit">Process Payroll</button>
+  </div>
+</form>
+
+    </div>
+  </div>
+
+  <!-- Payroll Details Modal -->
+  <div id="detailsModal" class="modal">
+    <div class="modal-content details-modal">
+      <span class="close-btn" id="closeDetailsModal">&times;</span>
+      <h3>Payroll Details</h3>
+      
+      <div id="detailsContent"></div>
+      
+      <div class="buttons">
+        <button id="closeDetailsBtn" class="btn-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/payroll.js"></script>
+</body>
+</html>

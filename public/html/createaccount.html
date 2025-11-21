@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account - RMT HRMS</title>
+  <link rel="stylesheet" href="/css/createaccount.css">
+</head>
+<body>
+  <div class="container">
+    <div class="form-card">
+      <!-- Icon -->
+      <div class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#10B981" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </div>
+
+      <!-- Title -->
+      <h1 class="title">Create Account</h1>
+      <p class="subtitle">Join RMT HRMS</p>
+
+      <!-- Success Message -->
+      <div id="successMessage" class="success-message">
+        ✅ Account created successfully!
+      </div>
+
+      <!-- Error Message -->
+      <div id="errorMessage" class="error-message">
+        ❌ Error: Please check your inputs or email already exists.
+      </div>
+
+      <!-- Form -->
+      <form id="createAccountForm" class="account-form">
+        <div class="row">
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" required placeholder="First Name">
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" required placeholder="Last Name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="employeeId">Employee ID</label>
+          <input type="text" id="employeeId" required placeholder="Contact your HR Manager for your Employee ID">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required placeholder="Enter your email">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required placeholder="At least 6 Characters">
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" required placeholder="Confirm Password">
+        </div>
+
+        <button type="submit" class="btn-primary">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/createaccount.js"></script>
+</body>
+</html>

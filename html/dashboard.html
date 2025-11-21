@@ -100,18 +100,13 @@
   <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
   <div class="dropdown-menu" id="dropdownMenu">
       <p id="userEmailDisplay"></p>
-      <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+      <button type="button" id="logoutBtn" class="btn btn-secondary">Logout</button>
   </div>
 </div>
 
 
-  <script src="../js/dashboard.js"></script>
-  <script>
-  // Redirect back to login if user isn't logged in
-  if (!localStorage.getItem('isLoggedIn')) {
-    window.location.href = 'index.html';
-  }
-</script>
+  <script src="/js/dashboard.js"></script>
+  
 
 </body>
 </html>

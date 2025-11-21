@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RMT HRMS - Login</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   
 </head>
 <body>
     <div class="container">
@@ -67,33 +67,9 @@
     </div>
 
     <!-- Your JS file -->
-    <script src="../js/index.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/index.js"></script>
 
-    <!-- Simple login-to-dashboard connection -->
-    <script>
-        // Demo login connection (no database yet)
-        const loginForm = document.getElementById("loginForm");
-
-        loginForm.addEventListener("submit", function(e) {
-            e.preventDefault();
-
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value.trim();
-
-            // Demo-only validation (use any password)
-            const demoEmail = "Delacruz.Juan@rmt.com";
-
-            if (email === demoEmail && password !== "") {
-                // Save login state
-                localStorage.setItem("isLoggedIn", "true");
-                localStorage.setItem("userEmail", email);
-
-                alert("Login successful! Redirecting to dashboard...");
-                window.location.href = "dashboard.html";
-            } else {
-                alert("Invalid credentials. Please use the demo email shown below.");
-            }
-        });
-    </script>
+    
 </body>
 </html>

@@ -1,104 +1,112 @@
-const SUPABASE_URL = 'https://giuklazjcvfkpyylmtrm.supabase.co'; 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdWtsYXpqY3Zma3B5eWxtdHJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MjcyMDUsImV4cCI6MjA3ODUwMzIwNX0.vEOtSgr4rMUxNlfAunhNvG2L0oMloV9x4thi3vz0EPc';
+SUPABASE_URL= 'https://kfsjewtfpeohdbxyrlcz.supabase.co';
+SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtmc2pld3RmcGVvaGRieHlybGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzU5NjQsImV4cCI6MjA3OTIxMTk2NH0.wrszJi_YC74iYE7oaHvbWBo5JmfY_Enc8VQg5wwggrw'
 
-// 2. Initialization: The createClient function is globally available via the CDN.
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Get modal elements
-const modal = document.getElementById('forgotPasswordModal');
-const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-const closeBtn = document.getElementsByClassName('close')[0];
+// DOM Elements
 const loginForm = document.getElementById('loginForm');
+const createAccountBtn = document.querySelector('.btn-secondary');
+
+// Forgot Password Modal Elements
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+const closeModal = document.querySelector('.modal-content .close');
 const forgotPasswordForm = document.getElementById('forgotPasswordForm');
 
-// Sample email for demo
-const demoEmail = "earvinjohnlopez01@gmail.com";
 
-// Open modal when "Forgot Password?" is clicked
-forgotPasswordLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
-});
+// ====================================================================
+// 2. LOGIN FORM SUBMISSION HANDLER
+// ====================================================================
 
-// Close modal when X is clicked
-closeBtn.addEventListener('click', function() {
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-});
-
-// Close modal when clicking outside of it
-window.addEventListener('click', function(e) {
-    if (e.target === modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-});
-
-// Handle login form submission (demo only)
-loginForm.addEventListener('submit', function(e) {
-    e.preventDefault();
+loginForm.addEventListener('submit', async (event) => {
+    event.preventDefault(); 
     
+    // Get input values (IDs match your HTML: 'email' and 'password')
     const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
+    const password = document.getElementById('password').value;
 
-    console.log('Login attempt:', { email, password });
+    const loginButton = document.querySelector('.btn-primary'); // Assumes first primary button is login
+    loginButton.textContent = 'Logging In...';
+    loginButton.disabled = true;
 
-    // ✅ Demo login check (no database yet)
-    // You can replace this email with any sample you want
-    const demoEmail = "earvinjohnlopez01@gmail.com";
+    // Call Supabase Sign In API
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
 
-    if (email === demoEmail && password !== "") {
-   
+    loginButton.textContent = 'Log In';
+    loginButton.disabled = false;
 
-    // Save simple session data in localStorage
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
-
-    // Redirect to dashboard.html
-    window.location.href = "dashboard.html";
-} else {
-    alert('Invalid credentials. Please use the demo email.');
-}
-
-});
-
-// Handle forgot password form submission
-forgotPasswordForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const resetEmail = document.getElementById('resetEmail').value;
-    
-    console.log('Password reset requested for:', resetEmail);
-
-    if (resetEmail === demoEmail) {
-        // Store demo code and email in localStorage
-        const demoCode = "123456";
-        localStorage.setItem('resetEmail', resetEmail);
-        localStorage.setItem('verificationCode', demoCode);
-
-        // Simulate sending reset link and go to verify-code page
-        alert('Password reset link sent! (Demo mode)\nYour code: ' + demoCode);
-        window.location.href = "verify-code.html"; // redirect to code verification page
+    if (error) {
+        console.error('Login Error:', error);
+        alert('Login Error: ' + error.message);
+    } else if (data.session) {
+        // Successful Login - Data contains session
+        alert('Login Successful! Redirecting to Dashboard.');
+        window.location.href = 'html/dashboard.html'; 
     } else {
-        alert('Email not found in sample data.');
+        // Handle case where user is created but email not confirmed
+        alert("Authentication failed. Check your email for a confirmation link.");
     }
-
-    // Reset form and close modal
-    forgotPasswordForm.reset();
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
 });
 
-// Handle Create Account button
-document.querySelector('.btn-secondary').addEventListener('click', function() {
-    window.location.href = "createaccount.html";
+
+// ====================================================================
+// 3. CREATE ACCOUNT REDIRECT
+// ====================================================================
+
+createAccountBtn.addEventListener('click', function(event) {
+    event.preventDefault(); 
+    window.location.href = "html/createaccount.html";
 });
 
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.style.display === 'block') {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+
+// ====================================================================
+// 4. FORGOT PASSWORD MODAL & LOGIC
+// ====================================================================
+
+// Open Modal
+forgotPasswordLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    forgotPasswordModal.style.display = 'block';
+});
+
+// Close Modal
+closeModal.addEventListener('click', () => {
+    forgotPasswordModal.style.display = 'none';
+});
+
+window.addEventListener('click', (event) => {
+    if (event.target === forgotPasswordModal) {
+        forgotPasswordModal.style.display = 'none';
+    }
+});
+
+// Reset Password Form Submission
+forgotPasswordForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const resetEmail = document.getElementById('resetEmail').value.trim();
+    const submitButton = forgotPasswordForm.querySelector('.btn-primary');
+
+    submitButton.textContent = 'Sending...';
+    submitButton.disabled = true;
+    
+    // Call Supabase Password Recovery API
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        // The URL the user is redirected to after clicking the reset link in their email
+        redirectTo: 'http://your-live-domain.com/resetpassword.html' 
+    });
+
+    submitButton.textContent = 'Send Reset Link';
+    submitButton.disabled = false;
+    
+    if (error) {
+        console.error('Password Reset Error:', error);
+        alert('Error sending link: ' + error.message);
+    } else {
+        alert('Password reset link sent! Check your email.');
+        forgotPasswordModal.style.display = 'none'; // Close modal on success
     }
 });

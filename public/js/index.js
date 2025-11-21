@@ -112,7 +112,8 @@ forgotPasswordForm.addEventListener('submit', function(e) {
 
 // Handle Create Account button
 document.querySelector('.btn-secondary').addEventListener('click', function() {
-    window.location.href = "createaccount.html";
+    console.log("Button clicked and JavaScript executed."); // Add this line
+    window.location.href = "createaccount.html";
 });
 
 // Close modal with Escape key

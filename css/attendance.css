@@ -100,6 +100,7 @@ header p {
   border-radius: 6px;
   background: #fff;
   font-size: 0.9rem;
+  margin-left: 1rem;
 }
 
 .btn-green {
@@ -109,65 +110,47 @@ header p {
   padding: 10px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
 }
 
 .btn-green:hover {
   background-color: #15803d;
 }
 
-/* Employee Cards */
-.employee-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-}
-
-.employee-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 20px;
-  text-align: left;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.employee-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-}
-
-.employee-card h3 {
-  font-size: 1rem;
-  color: #111827;
-}
-
-.employee-card p {
-  color: #6b7280;
-  font-size: 0.9rem;
-  margin-bottom: 12px;
-}
-
-.btn-gray {
-  background-color: #f3f4f6;
-  color: #374151;
+.btn-secondary {
+  background-color: #c6c6c6;
+  color: black;
   border: none;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
 }
 
-.btn-gray:hover {
-  background-color: #e5e7eb;
+.btn-secondary:hover {
+  background-color: #8a8a8a;
 }
 
-.btn-logged {
-  background-color: #16a34a !important;
-  color: #fff !important;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+thead {
+  background: #f3f4f6;
+  text-align: left;
+}
+
+th, td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+td span {
+  font-size: 13px;
+  color: #6b7280;
 }
 
 /* Responsive */
@@ -189,132 +172,21 @@ header p {
     gap: 10px;
   }
 }
-.user-menu {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+/* Search Box */
+.search-box {
+  margin: 20px 0;
 }
 
-.user-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 50px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    min-width: 150px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.dropdown-menu p {
-    margin: 0 0 10px 0;
-    font-weight: 500;
-    color: #16a34a;
-}
-
-.dropdown-menu button {
-    width: 100%;
-    background-color: #16a34a; 
-    color: #fff;               
-    border: none;             
-    padding: 8px 10px;        
-    border-radius: 6px;       
-    cursor: pointer;          
-    transition: background 0.2s;
-}
-
-.dropdown-menu button:hover {
-    background-color: #15803d; 
-}
-/* Modal */
-.modal {
-  display: none; 
-  position: fixed; 
-  z-index: 1000; 
-  left: 0;
-  top: 0;
-  width: 100%; 
-  height: 100%; 
-  background-color: rgba(0,0,0,0.3);
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 25px;
-  width: 400px;
-  max-width: 90%;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  position: relative;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-  from {transform: translateY(-20px); opacity: 0;}
-  to {transform: translateY(0); opacity: 1;}
-}
-
-.close-btn {
-  position: absolute;
-  right: 15px;
-  top: 10px;
-  font-size: 20px;
-  color: #555;
-  cursor: pointer;
-}
-
-.close-btn:hover {
-  color: #000;
-}
-
-.modal-content h3 {
-  margin-bottom: 15px;
-  color: #111827;
-  font-size: 1rem;
-}
-
-.modal-content label {
-  display: block;
-  margin-top: 10px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.modal-content input,
-.modal-content textarea {
+.search-box input {
   width: 100%;
-  margin-top: 5px;
-  padding: 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  transition: 0.2s;
 }
 
-.modal-content textarea {
-  resize: none;
-  height: 80px;
+.search-box input:focus {
+  outline: none;
+  border-color: #16a34a;
 }
 
-.time-inputs {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.form-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 15px;
-}

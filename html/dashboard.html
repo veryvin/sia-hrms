@@ -5,20 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RMT HRMS Dashboard</title>
   <link rel="stylesheet" href="../css/dashboard.css" />
-
 </head>
+
 <body>
   <div class="container">
     <!-- Sidebar -->
     <aside class="sidebar">
       <h2 class="logo">RMT HRMS</h2>
       <p class="subtitle">Human Resource Management</p>
+      
+      <!-- Welcome text (Supabase fills this) -->
       <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
-
-<script>
-  const userEmail = localStorage.getItem('userEmail');
-  document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-</script>
 
       <nav class="nav">
         <a href="dashboard.html" class="nav-item active">🏠 Dashboard</a>
@@ -29,17 +26,6 @@
         <a href="reports.html" class="nav-item">📊 Reports</a>
       </nav>
     </aside>
-
-    
-
-<script>
-  document.getElementById('logoutBtn').addEventListener('click', function() {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    window.location.href = 'index.html';
-  });
-</script>
-
 
     <!-- Main Content -->
     <main class="main">
@@ -52,13 +38,13 @@
       <section class="stats">
         <div class="card">
           <h3>Total Employees</h3>
-          <p class="number">3</p>
-          <span>3 Active</span>
+          <p class="number">0</p>
+          <span>Active Employees</span>
         </div>
         <div class="card">
           <h3>Present Today</h3>
           <p class="number">0</p>
-          <span>Out of 3</span>
+          <span>Out of 0</span>
         </div>
         <div class="card">
           <h3>Pending Leaves</h3>
@@ -68,7 +54,7 @@
         <div class="card">
           <h3>Monthly Payroll</h3>
           <p class="number">₱0</p>
-          <span>0 processed</span>
+          <span>Processed</span>
         </div>
       </section>
 
@@ -95,18 +81,31 @@
       </section>
     </main>
   </div>
+
   <!-- User Menu (Top Right) -->
-<div class="user-menu">
-  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
-  <div class="dropdown-menu" id="dropdownMenu">
-      <p id="userEmailDisplay"></p>
-      <button type="button" id="logoutBtn" class="btn btn-secondary">Logout</button>
+  <div class="user-menu-container">
+    <img 
+      src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
+      alt="User Icon" 
+      class="user-icon" 
+      id="userIcon"
+    >
+    
+    <div class="dropdown-menu" id="dropdownMenu">
+      <p id="userEmailDisplay">guest@rms.com</p>
+      <button type="button" id="logoutBtn">Logout</button>
+    </div>
   </div>
-</div>
 
+  <!-- Error Modal -->
+  <div id="errorModal" class="hidden">
+    <div class="modal-content">
+      <p id="modalErrorMessage"></p>
+      <button id="closeModalBtn">Close</button>
+    </div>
+  </div>
 
-  <script src="/js/dashboard.js"></script>
-  
-
+  <!-- Load JS -->
+  <script type="module" src="/js/dashboard.js"></script>
 </body>
 </html>

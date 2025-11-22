@@ -98,7 +98,7 @@ if (createAccountForm) {
 
             const insertData = {
                 // REQUIRED AUTH LINK
-                id: newUser.id, 
+               auth_id: newUser.id, 
                 
                 // FORM DATA (MUST NOT BE NULL)
                 first_name: firstName,
@@ -109,11 +109,8 @@ if (createAccountForm) {
                 // OPTIONAL/DEFAULT FIELDS (Match the clean table schema)
                 phone: null, 
                 hire_date: hireDateFormatted, // Use corrected date format
-                salary: 0, 
                 department_id: null, 
                 role_id: null, 
-                manager_id: null, 
-                is_active: true 
                 
                 // created_at and updated_at are handled automatically by Supabase
             };

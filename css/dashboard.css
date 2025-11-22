@@ -41,11 +41,13 @@
   margin-bottom: 20px;
 }
 
+/* Navigation */
 .nav {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+
 .nav-item {
   text-decoration: none;
   color: #374151;
@@ -70,15 +72,6 @@
 .main {
   flex: 1;
   padding: 30px;
-}
-
-header h1 {
-  font-size: 1.5rem;
-}
-
-header p {
-  color: #6b7280;
-  margin-bottom: 20px;
 }
 
 /* Cards */
@@ -160,39 +153,43 @@ header p {
   .sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e5eb;
   }
   .bottom-section {
     grid-template-columns: 1fr;
   }
 }
 
-/* User Menu Container Styling (relative positioning is crucial here) */
+/* User Menu */
 .user-menu-container {
-    position: relative; /* This must be relative for the menu to position correctly */
-    top: 0;
-    right: 0;
-    z-index: 10;
+  position: fixed;
+  top: 10px;
+  right: 20px;
+  z-index: 10;
 }
 
-/* Dropdown Menu (Default Hidden State) */
+.user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
 .dropdown-menu {
-    /* Use display: none; to hide by default */
-    display: none; 
-    position: absolute;
-    right: 0;
-    top: 50px; /* Position below the icon */
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    min-width: 150px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 50px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-/* FIX: Active State (This is what shows the menu) */
 .dropdown-menu.active {
-    display: block;
+  display: block;
 }
 
 .dropdown-menu p {
@@ -203,8 +200,8 @@ header p {
 
 .dropdown-menu button {
   width: 100%;
-  background-color: #16a34a; 
-  color: #fff; 
+  background-color: #16a34a;
+  color: #fff;
   border: none;
   padding: 8px 10px;
   border-radius: 6px;
@@ -213,13 +210,31 @@ header p {
 }
 
 .dropdown-menu button:hover {
-  background-color: #15803d; 
+  background-color: #15803d;
 }
 
-/* Existing user-menu class is not used in HTML, replacing with user-menu-container */
-.user-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
+/* Modal */
+#errorModal {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+#errorModal.flex {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 250px;
+  text-align: center;
 }

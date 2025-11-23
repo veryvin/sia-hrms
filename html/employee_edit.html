@@ -1,0 +1,94 @@
+<script>
+  if (!localStorage.getItem('isLoggedIn')) {
+    window.location.href = 'index.html';
+  }
+</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Employee</title>
+  <link rel="stylesheet" href="../css/employee.css" />
+</head>
+<body>
+<aside class="sidebar">
+  <h2 class="logo">RMT HRMS</h2>
+  <p class="subtitle">Human Resource Management</p>
+  <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+  
+  <script>
+  const userEmail = localStorage.getItem('userEmail');
+  document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+  </script>
+
+  <nav class="nav">
+    <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
+    <a href="employee.html" class="nav-item active">👥 Employees</a>
+    <a href="attendance.html" class="nav-item">🕒 Attendance</a>
+    <a href="leave.html" class="nav-item">📄 Leave Management</a>
+    <a href="payroll.html" class="nav-item">💲 Payroll</a>
+    <a href="reports.html" class="nav-item">📊 Reports</a>
+  </nav>
+</aside>
+
+<div class="main-content">
+  <header>
+    <h2>Edit Employee</h2>
+    <button class="back-btn" onclick="window.location.href='employee.html'">← Back to List</button>
+  </header>
+
+  <form id="employeeForm" data-mode="edit">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Employee Photo</label>
+        <input type="file" id="empPhoto" accept="image/*">
+        <div id="photoPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Resume / CV / Certificate (PDF/Word)</label>
+        <input type="file" id="empFiles" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple>
+        <div id="filesList" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="form-group"><label>Employee ID</label><input type="text" id="empId" required></div>
+      <div class="form-group"><label>Email</label><input type="email" id="empEmail" required></div>
+      <div class="form-group"><label>First Name</label><input type="text" id="firstName" required></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="lastName" required></div>
+      <div class="form-group"><label>Middle Name</label><input type="text" id="middleName" required></div>
+      <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" required></div>
+      <div class="form-group"><label>Gender</label><input type="text" id="gender" required></div>
+      <div class="form-group"><label>Phone</label><input type="text" id="phone" required></div>
+      <div class="form-group"><label>Address</label><input type="text" id="address" required></div>
+      <div class="form-group"><label>Position</label><input type="text" id="position" required></div>
+      <div class="form-group"><label>Department</label><input type="text" id="department" required></div>
+      <div class="form-group"><label>Date Hired</label><input type="date" id="dateHired" required></div>
+
+      <div class="form-group">
+        <label>Employment Status</label>
+        <select id="status" required>
+          <option value="">Select Status</option>
+          <option value="Intern">Intern</option>
+          <option value="Probationary">Probationary</option>
+          <option value="Regular">Regular</option>
+          <option value="Resigned">Resigned</option>
+          <option value="Terminated">Terminated</option>
+        </select>
+      </div>
+
+      <div class="form-group"><label>Monthly Salary (₱)</label><input type="number" id="salary" required></div>
+    </div>
+
+    <input type="hidden" id="editingIndex">
+
+    <div class="form-actions" style="margin-top:20px;">
+      <button type="button" id="cancelEdit" class="cancel-btn margin-bottom">Cancel</button>
+      <button type="submit" id="saveEdit" class="save-btn margin-bottom">Save Changes</button>
+    </div>
+  </form>
+</div>
+
+<script src="../js/employee.js"></script>
+</body>
+</html>

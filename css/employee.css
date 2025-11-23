@@ -109,6 +109,67 @@ header p {
   background: #15803d;
 }
 
+/* 2x2 Photo Style */
+.photo-2x2 {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #ccc;
+}
+
+/* Buttons */
+button.view,
+button.edit,
+button.delete,
+button.back-btn,
+button.save-btn,
+button.cancel-btn,
+button.next-btn,
+button.prev-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.margin-bottom{
+  margin-bottom: 20px;
+}
+
+button.view {
+  background: #3498db;
+  color: white;
+}
+button.edit {
+  background: #f1c40f;
+  color: black;
+}
+button.delete {
+  background: #e74c3c;
+  color: white;
+}
+button.prev-btn,
+button.next-btn {
+  background: #8e44ad;
+  color: white;
+}
+button.back-btn {
+  background: #2ecc71;
+  color: white;
+  margin-top: 15px;
+}
+button.save-btn {
+  background: #1abc9c;
+  color: white;
+}
+button.cancel-btn {
+  background: #7f8c8d;
+  color: white;
+}
+
+
 /* Search Box */
 .search-box {
   margin: 20px 0;
@@ -126,6 +187,28 @@ header p {
   outline: none;
   border-color: #16a34a;
 }
+
+/* Department Filter Dropdown */
+.filter-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+#departmentFilter {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+#departmentFilter:focus {
+  outline: none;
+  border-color: #16a34a;
+}
+
 
 /* Table */
 table {

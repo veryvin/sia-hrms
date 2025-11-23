@@ -1,0 +1,94 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f9f9f9;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 60px);
+}
+
+.login-box {
+    background: white;
+    width: 350px;
+    padding: 35px 30px;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+    text-align: center;
+}
+
+.icon span {
+    font-size: 40px;
+    font-weight: bold;
+    color: #0f9e5e;
+}
+
+h1 {
+    font-size: 40px;
+    margin: 10px 0 0 0;
+    color: #0f9e5e;
+}
+
+.subtitle {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 25px;
+    margin-top: 2px;
+}
+
+form {
+    text-align: left;
+}
+
+form .form-group{
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-size: 14px;
+    margin: 10px 0 5px;
+    display: block;
+}
+
+input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    margin-bottom: 15px;
+}
+
+button {
+    width: 100%;
+    background: #0f9e5e;
+    font-weight: bold;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0d8c52;
+}
+
+.btn-secondary {
+  width: 100%;  
+  background-color: #c6c6c6;
+  font-weight: bold;
+  color: black;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #8a8a8a;
+}

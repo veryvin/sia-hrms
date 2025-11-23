@@ -8,13 +8,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Employee Management</title>
+  <title>View Employee</title>
   <link rel="stylesheet" href="../css/employee.css" />
 </head>
 <body>
-<div class="container">
-    <!-- Sidebar -->
-</div>
 <aside class="sidebar">
   <h2 class="logo">RMT HRMS</h2>
   <p class="subtitle">Human Resource Management</p>
@@ -37,45 +34,11 @@
 
 <div class="main-content">
   <header>
-    <h2>Employee Management</h2>
-    <p id="totalEmployees">0 total employees</p>
-    <button class="add-btn" id="gotoAdd">+ Add Employee</button>
+    <h2>Employee Profile</h2>
+    <button class="back-btn" onclick="window.location.href='employee.html'">← Back to List</button>
   </header>
 
-  <div class="search-box">
-    <input type="text" id="search" placeholder="Search Employees..." />
-  </div>
-
-  <div class="filter-container">
-    <label for="departmentFilter">Filter by Department:</label>
-    <select id="departmentFilter">
-      <option value="">All Departments</option>
-    </select>
-  </div>
-
-  <br>
-
-  <table>
-    <thead>
-      <tr>
-        <th>EMPLOYEE</th>
-        <th>POSITION</th>
-        <th>DEPARTMENT</th>
-        <th>STATUS</th>
-        <th>SALARY</th>
-        <th>ACTIONS</th>
-      </tr>
-    </thead>
-    <tbody id="employeeTable"></tbody>
-  </table>
-
-  <div id="paginationControls" style="margin-top:15px; display:flex; gap:10px; align-items:center;">
-    <button class="prev-btn margin-bottom" id="prevPage">Previous</button>
-    <span class="margin-bottom" id="pageInfo">Page 1</span>
-    <button class="next-btn margin-bottom" id="nextPage">Next</button>
-  </div>
-
-  <div class="employee-details" style="display:none;"></div>
+  <div id="viewContent"></div>
 </div>
 
 <script src="../js/employee.js"></script>

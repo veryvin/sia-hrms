@@ -14,19 +14,11 @@
         <h2 class="logo">RMT HRMS</h2>
         <p class="subtitle">Human Resource Management</p>
         <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
-        <!-- User Menu (Top Right) -->
-  <div class="user-menu">
-    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
-    <div class="dropdown-menu" id="dropdownMenu">
-        <p id="userEmailDisplay"></p>
-        <button id="logoutBtn" class="btn btn-secondary">Logout</button>
-    </div>
-  </div>
-
-  <script>
-    const userEmail = localStorage.getItem('userEmail');
-    document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-  </script>
+        
+        <script>
+          const userEmail = localStorage.getItem('userEmail');
+          document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+        </script>
 
         <nav class="nav">
           <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
@@ -46,68 +38,35 @@
         </header>
 
         <section class="controls">
-          <input type="date" id="attendanceDate" />
-          <button class="btn-green" id="openModalBtn">+ Log Attendance</button>
-        </section>
-
-        <section class="employee-list">
-          <div class="employee-card">
-            <h3>Lopez, John Earvin</h3>
-            <p>Project Manager</p>
-            <button class="btn-gray log-btn">Log Attendance</button>
+          <div>
+            <label for="attendanceDate">DATE:</label>
+            <input type="date" id="attendanceDate" />
           </div>
-
-          <div class="employee-card">
-            <h3>Moreno, Leigh</h3>
-            <p>UI/UX Designer</p>
-            <button class="btn-gray log-btn">Log Attendance</button>
-          </div>
-
-          <div class="employee-card">
-            <h3>Veloria, Arjie</h3>
-            <p>UI/UX Designer</p>
-            <button class="btn-gray log-btn">Log Attendance</button>
+          <h3 id="totalAttendance">Total Attendance: 0</h3>
+          <div>
+            <button class="btn-green">+ Log Attendance</button>
           </div>
         </section>
+
+        <div class="search-box">
+          <input type="text" id="search" placeholder="Search Employees..." />
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>EMPLOYEE ID</th>
+              <th>EMPLOYEE NAME</th>
+              <th>DEPARTMENT</th>
+              <th>POSITION</th>
+              <th>DATE</th>
+              <th>TIME IN</th>
+              <th>TIME OUT</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
       </main>
     </div>
-<!-- Log Attendance Modal -->
-<div id="attendanceModal" class="modal">
-  <div class="modal-content">
-    <span class="close-btn" id="closeModal">&times;</span>
-    <h3>Add New Employee</h3>
-
-    <form id="attendanceForm">
-      <label for="employee">Employee</label>
-      <input type="text" id="employee" placeholder="Enter employee name" required>
-
-      <label for="date">Date</label>
-      <input type="date" id="date" required>
-
-      <div class="time-inputs">
-        <div>
-          <label for="timeIn">Time In</label>
-          <input type="time" id="timeIn" required>
-        </div>
-        <div>
-          <label for="timeOut">Time Out</label>
-          <input type="time" id="timeOut" required>
-        </div>
-      </div>
-
-      <label for="status">Status</label>
-      <input type="text" id="status" placeholder="Present / Absent / Late">
-
-      <label for="notes">Notes</label>
-      <textarea id="notes" placeholder="Optional notes"></textarea>
-
-      <div class="form-buttons">
-        <button type="button" class="btn-gray" id="cancelBtn">Cancel</button>
-        <button type="submit" class="btn-green">Log Attendance</button>
-      </div>
-    </form>
-  </div>
-</div>
 
     <script src="../js/attendance.js"></script>
   </body>

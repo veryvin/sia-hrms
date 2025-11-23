@@ -69,45 +69,76 @@ loginForm.addEventListener('submit', function(e) {
     const demoEmail = "earvinjohnlopez01@gmail.com";
 
     if (email === demoEmail && password !== "") {
-   
 
-    // Save simple session data in localStorage
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("userEmail", email);
 
-    // Redirect to dashboard.html
-    window.location.href = "dashboard.html";
+    showLoginSuccess();
+
+   // Unified Success Popup
+function showLoginSuccess() {
+    const modal = document.getElementById("loginSuccessModal");
+    const title = document.getElementById("successTitle");
+    const message = document.getElementById("successMessage");
+
+    title.textContent = "Login Successful";
+    message.textContent = "Redirecting...";
+
+    modal.classList.remove("hidden");
+
+    setTimeout(() => {
+        modal.classList.add("fade-out");
+        setTimeout(() => {
+            window.location.href = "dashboard.html";
+        }, 300);
+    }, 1500);
+}
+
+
 } else {
     alert('Invalid credentials. Please use the demo email.');
 }
 
 });
 
-// Handle forgot password form submission
-forgotPasswordForm.addEventListener('submit', function(e) {
+/// Handle login form submission
+loginForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    
-    const resetEmail = document.getElementById('resetEmail').value;
-    
-    console.log('Password reset requested for:', resetEmail);
 
-    if (resetEmail === demoEmail) {
-        // Store demo code and email in localStorage
-        const demoCode = "123456";
-        localStorage.setItem('resetEmail', resetEmail);
-        localStorage.setItem('verificationCode', demoCode);
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
 
-        // Simulate sending reset link and go to verify-code page
-        alert('Password reset link sent! (Demo mode)\nYour code: ' + demoCode);
-        window.location.href = "verify-code.html"; // redirect to code verification page
+    const demoEmail = "earvinjohnlopez01@gmail.com";
+
+    if (email === demoEmail && password !== "") {
+        // Save session
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userEmail', email);
+
+        // Show login success modal
+        const modal = document.getElementById('loginSuccessModal');
+        modal.style.display = 'flex';
+
+        // Countdown text
+        let countdown = 2;
+        const msg = modal.querySelector('p');
+        msg.textContent = `Login successful! Redirecting in ${countdown}...`;
+
+        const interval = setInterval(() => {
+            countdown--;
+            msg.textContent = `Login successful! Redirecting in ${countdown}...`;
+            if (countdown <= 0) {
+                clearInterval(interval);
+                modal.classList.add('fade-out');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 300);
+            }
+        }, 1000);
+
     } else {
-        alert('Email not found in sample data.');
+        alert('Invalid credentials. Please use the demo email.');
     }
-
-    // Reset form and close modal
-    forgotPasswordForm.reset();
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
 });
 
 // Handle Create Account button

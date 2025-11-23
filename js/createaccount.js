@@ -1,85 +1,102 @@
-// Sample existing users (mock database)
+// Mock Database
 const existingUsers = [
-  { email: 'admin@rmt.com', employeeId: 'EMP001' },
-  { email: 'juan.delacruz@rmt.com', employeeId: 'EMP002' },
+  { email: 'admin@rmt.com' },
+  { email: 'juan.delacruz@rmt.com' }
 ];
 
+// DOM Elements
 const form = document.getElementById('createAccountForm');
+const firstNameInput = document.getElementById('firstName');
+const lastNameInput = document.getElementById('lastName');
+const employeeIdInput = document.getElementById('employeeId');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const confirmPasswordInput = document.getElementById('confirmPassword');
 const successMessage = document.getElementById('successMessage');
 const errorMessage = document.getElementById('errorMessage');
+const successModal = document.getElementById('successModal');
 
+// Password Toggle Function
+function togglePassword(fieldId, icon) {
+  const input = document.getElementById(fieldId);
+  if (input.type === "password") {
+    input.type = "text";
+    icon.src = "../images/hide.png";  // hide icon
+  } else {
+    input.type = "password";
+    icon.src = "../images/view.png";  // show icon
+  }
+}
+
+// Form Submission
 form.addEventListener('submit', (e) => {
   e.preventDefault();
 
-  // Collect inputs
-  const firstName = document.getElementById('firstName').value.trim();
-  const lastName = document.getElementById('lastName').value.trim();
-  const employeeId = document.getElementById('employeeId').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
+  successMessage.style.display = "none";
+  errorMessage.style.display = "none";
 
-  // Reset messages
-  successMessage.style.display = 'none';
-  errorMessage.style.display = 'none';
+  const firstName = firstNameInput.value.trim();
+  const lastName = lastNameInput.value.trim();
+  const employeeId = employeeIdInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
 
-  // Validation
   if (!firstName || !lastName || !employeeId || !email || !password || !confirmPassword) {
-    showError('Please fill out all fields.');
-    return;
+    return showError("Please fill out all fields.");
   }
 
-  if (password.length < 6) {
-    showError('Password must be at least 6 characters long.');
-    return;
-  }
+  if (password.length < 6) return showError("Password must be at least 6 characters.");
+  if (password !== confirmPassword) return showError("Passwords do not match.");
 
-  if (password !== confirmPassword) {
-    showError('Passwords do not match.');
-    return;
-  }
+  const exists = existingUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
+  if (exists) return showError("Email already exists.");
 
-  const userExists = existingUsers.some(user => user.email.toLowerCase() === email.toLowerCase());
-  if (userExists) {
-    showError('Email already exists. Try logging in.');
-    return;
-  }
+  existingUsers.push({ firstName, lastName, employeeId, email });
 
-  // Simulate creating new user
-  const newUser = { firstName, lastName, employeeId, email };
-  existingUsers.push(newUser);
-
-  console.log('✅ New User Created:', newUser);
-
-  // After showing success message
-showSuccess('Account created successfully!');
-
-// Redirect back to login page after 2 seconds
-setTimeout(() => {
-  window.location.href = 'index.html';  // Adjust path if needed
-}, 2000); // 2000ms = 2 seconds delay
-
-
-  // Reset form
-  form.reset();
+  showModal();
 });
 
+// Inline error/success
 function showError(message) {
-  errorMessage.textContent = '❌ ' + message;
-  errorMessage.style.display = 'block';
+  errorMessage.textContent = "❌ " + message;
+  errorMessage.style.display = "block";
+  successMessage.style.display = "none";
 }
 
 function showSuccess(message) {
-  successMessage.textContent = '✅ ' + message;
-  successMessage.style.display = 'block';
+  successMessage.textContent = "✅ " + message;
+  successMessage.style.display = "block";
+  errorMessage.style.display = "none";
 }
-// Redirect "Create an Account" button to createaccount.html
-document.addEventListener('DOMContentLoaded', () => {
-  const createAccountBtn = document.getElementById('createAccountBtn');
-  if (createAccountBtn) {
-    createAccountBtn.addEventListener('click', () => {
-      window.location.href = 'createaccount.html'; // adjust if your file is in another folder
-    });
-  }
+
+// Show Popup Modal + Redirect
+function showModal() {
+  const modalMessage = document.getElementById('modalMessage');
+  successModal.style.display = "flex";
+  modalMessage.textContent = 'Account created successfully! Redirecting...';
+
+  setTimeout(() => {
+    // Optional fade-out
+    successModal.classList.add('fade-out');
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 300); // match fade-out duration
+  }, 2000);
+}
+
+
+// Hide error on input
+document.querySelectorAll("input").forEach(input => {
+  input.addEventListener("input", () => {
+    errorMessage.style.display = "none";
+  });
 });
-}
+
+// Optional: Password toggle for multiple fields
+document.querySelectorAll('.toggle-password').forEach(icon => {
+  icon.addEventListener('click', () => {
+    const targetId = icon.getAttribute('data-target');
+    togglePassword(targetId, icon);
+  });
+});

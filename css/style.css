@@ -216,6 +216,7 @@ body {
     animation: slideIn 0.3s ease;
 }
 
+
 @keyframes slideIn {
     from {
         transform: translateY(-50px);
@@ -277,4 +278,68 @@ body {
     height: auto;
     display: block;
     margin: 0 auto 10px; /* center + spacing */
+}
+/* Logo animation in modal */
+.modal-content img {
+  width: 80px;
+  margin-bottom: 12px;
+  animation: bounce 0.8s;
+}
+
+/* Bounce keyframes */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-15px); }
+  60% { transform: translateY(-7px); }
+}
+
+/* Optional fade-out before redirect */
+.modal.fade-out {
+  animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.9); }
+}
+/* Unified Success Modal (Matches Account Created Design) */
+.success-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+.success-content {
+    background: #fff;
+    padding: 40px 30px;
+    width: 360px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.success-logo {
+    width: 70px;
+    margin-bottom: 20px;
+}
+
+.success-modal.hidden {
+    display: none;
+}
+
+/* Fade-out animation */
+.success-modal.fade-out {
+    animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.9); }
 }

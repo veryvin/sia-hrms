@@ -1,3 +1,4 @@
+/* Reset */
 * {
   margin: 0;
   padding: 0;
@@ -5,7 +6,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   background-color: #f9fafb;
   display: flex;
   justify-content: center;
@@ -26,9 +27,15 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.icon {
+.logo-icon {
   text-align: center;
   margin-bottom: 16px;
+}
+
+.logo-img {
+  width: 70px;
+  height: auto;
+  margin-bottom: 10px;
 }
 
 .title {
@@ -45,6 +52,7 @@ body {
   margin-bottom: 24px;
 }
 
+/* Form */
 .account-form {
   width: 100%;
 }
@@ -78,10 +86,36 @@ input {
 
 input:focus {
   border-color: #10B981;
-  outline: none;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
+/* Password Toggle Icon */
+.password-group {
+    position: relative;
+}
+
+.password-group input {
+    padding-right: 45px; /* space for eye icon */
+}
+
+.toggle-password {
+    width: 22px;
+    height: 22px;
+    position: absolute;
+    right: 12px;
+    top: 37px;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: 0.2s ease;
+}
+
+.toggle-password:hover {
+    opacity: 1;
+}
+
+
+
+/* Buttons */
 .btn-primary {
   width: 100%;
   background-color: #22c55e;
@@ -101,6 +135,7 @@ input:focus {
   transform: translateY(-1px);
 }
 
+/* Messages */
 .success-message,
 .error-message {
   display: none;
@@ -112,15 +147,42 @@ input:focus {
 }
 
 .success-message {
-  background-color: #d1fae5;
+  background: #d1fae5;
   color: #065f46;
   border: 1px solid #a7f3d0;
 }
 
 .error-message {
-  background-color: #fee2e2;
+  background: #fee2e2;
   color: #991b1b;
   border: 1px solid #fca5a5;
+}
+
+/* 🎉 Popup Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+  color: #111827;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @media (max-width: 500px) {
@@ -128,9 +190,26 @@ input:focus {
     flex-direction: column;
   }
 }
-.logo-img {
-    width: 70px;      /* adjust size here */
-    height: auto;
-    display: block;
-    margin: 0 auto 10px; /* center + spacing */
+/* Logo animation in modal */
+.modal-content img {
+  width: 80px;
+  margin-bottom: 12px;
+  animation: bounce 0.8s;
+}
+
+/* Bounce keyframes */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-15px); }
+  60% { transform: translateY(-7px); }
+}
+
+/* Optional fade-out before redirect */
+.modal.fade-out {
+  animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.9); }
 }

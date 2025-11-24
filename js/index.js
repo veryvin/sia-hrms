@@ -44,7 +44,7 @@ loginForm.addEventListener('submit', async (event) => {
     } else if (data.session) {
         // Successful Login - Data contains session
         alert('Login Successful! Redirecting to Dashboard.');
-        window.location.href = 'html/dashboard.html'; 
+        window.location.href = 'dashboard.html'; 
     } else {
         // Handle case where user is created but email not confirmed
         alert("Authentication failed. Check your email for a confirmation link.");
@@ -58,7 +58,7 @@ loginForm.addEventListener('submit', async (event) => {
 
 createAccountBtn.addEventListener('click', function(event) {
     event.preventDefault(); 
-    window.location.href = "html/createaccount.html";
+    window.location.href = "createaccount.html";
 });
 
 

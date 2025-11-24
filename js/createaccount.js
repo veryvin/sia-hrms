@@ -98,7 +98,7 @@ if (createAccountForm) {
 
             const insertData = {
                 // REQUIRED AUTH LINK
-               auth_id: newUser.id, 
+               auth_uid: newUser.id, 
                 
                 // FORM DATA (MUST NOT BE NULL)
                 first_name: firstName,

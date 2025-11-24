@@ -9,94 +9,31 @@
 <body>
     <div class="container">
         <div class="login-card">
-            <!-- Logo Icon -->
-            <div class="logo-icon">
-                <div class="logo-icon">
-    <img src="../images/rmt.png" alt="RMT Logo" class="logo-img">
-</div>
 
+            <div class="logo-icon">
+                <img src="../images/rmt.png" class="logo-img">
             </div>
 
-            <!-- Title -->
             <h1 class="title">RMT HRMS</h1>
-            <p class="subtitle">Human Resources Management System</p>
 
-            <!-- Login Form -->
-            <form class="login-form" id="loginForm">
+            <form id="loginForm"> 
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="employeeId">Employee ID</label>
+                    <input type="text" id="employeeId" required>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                    <a href="#" class="forgot-password" id="forgotPasswordLink">Forgot Password?</a>
+                    <input type="password" id="password" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Log In</button>
-                <button type="button" class="btn btn-secondary">Create an Account</button>
+                <button type="submit" id="loginBtn" class="btn btn-primary">Log In</button>
+                <button type="button" id="createBtn" class="btn btn-secondary">Create an Account</button>
             </form>
 
         </div>
     </div>
-    
 
-    <!-- Forgot Password Modal -->
-    <div id="forgotPasswordModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Reset Password</h2>
-            <p class="modal-description">Enter your email address and we'll send you a link to reset your password.</p>
-            <form id="forgotPasswordForm">
-                <div class="form-group">
-                    <label for="resetEmail">Email Address</label>
-                    <input type="email" id="resetEmail" name="resetEmail" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Send Reset Link</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Your JS file -->
     <script src="../js/index.js"></script>
-
-    <!-- Login Success Modal (Updated to match Account Success popup) -->
-<div id="loginSuccessModal" class="success-modal hidden">
-    <div class="success-content">
-        <img src="../images/rmt.png" class="success-logo">
-        <h2 id="successTitle">Login Successful</h2>
-        <p id="successMessage">Redirecting...</p>
-    </div>
-</div>
-
-
-
-    <!-- Simple login-to-dashboard connection -->
-    <script>
-        // Demo login connection (no database yet)
-        const loginForm = document.getElementById("loginForm");
-
-        loginForm.addEventListener("submit", function(e) {
-            e.preventDefault();
-
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value.trim();
-
-            // Demo-only validation (use any password)
-            const demoEmail = "Delacruz.Juan@rmt.com";
-
-            if (email === demoEmail && password !== "") {
-                // Save login state
-                localStorage.setItem("isLoggedIn", "true");
-                localStorage.setItem("userEmail", email);
-
-                alert("Login successful! Redirecting to dashboard...");
-                window.location.href = "dashboard.html";
-            } else {
-                alert("Invalid credentials. Please use the demo email shown below.");
-            }
-        });
-    </script>
 </body>
 </html>

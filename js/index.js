@@ -1,155 +1,52 @@
-// index.js (Continuing from Initialization)
+document.addEventListener("DOMContentLoaded", () => {
 
-async function checkSupabaseConnection() {
-  try {
-    const { data, error } = await supabase
-      .from('employees') // IMPORTANT: Ensure 'employees' is the correct table name
-      .select('id')      
-      .limit(1);         
-    
-    if (error) {
-      console.error('❌ Supabase Connection Check FAILED:', error.message);
-      return false;
+    // 🛑 FIX APPLIED: Removed localStorage.clear() 
+    // The previous line was causing the Admin account to fail by wiping its session immediately.
+
+    // Sample accounts
+    const sampleUsers = [
+        { id: "hr", role: "Admin", password: "hr" },
+        { id: "emp",role: "Employee", password: "emp"},
+    ];
+
+    const loginForm = document.getElementById("loginForm");
+    // NOTE: If you are using a button with ID "createBtn", ensure it exists in your HTML.
+    const createBtn = document.getElementById("createBtn"); 
+
+    if (!loginForm) {
+        console.error("loginForm not found! Check your index.html file.");
+        return;
     }
-    
-    if (data) {
-      console.log('✅ Supabase Connection SUCCESSFUL! Data received:', data);
-      return true;
-    }
-  } catch (e) {
-    console.error('❌ Supabase Client Initialization Error:', e.message);
-    return false;
-  }
-}
 
-// EXECUTE the check when the script loads
-checkSupabaseConnection();
-// Get modal elements
-const modal = document.getElementById('forgotPasswordModal');
-const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-const closeBtn = document.getElementsByClassName('close')[0];
-const loginForm = document.getElementById('loginForm');
-const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    // --- LOGIN EVENT ---
+    loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
 
-// Sample email for demo
-const demoEmail = "earvinjohnlopez01@gmail.com";
+        const empId = document.getElementById("employeeId").value.trim();
+        const pwd = document.getElementById("password").value.trim();
 
-// Open modal when "Forgot Password?" is clicked
-forgotPasswordLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
-});
+        const user = sampleUsers.find(u => u.id === empId);
 
-// Close modal when X is clicked
-closeBtn.addEventListener('click', function() {
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-});
+        if (!user || user.password !== pwd) {
+            alert("Invalid Employee ID or Password.");
+            return;
+        }
 
-// Close modal when clicking outside of it
-window.addEventListener('click', function(e) {
-    if (e.target === modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-});
+        // Save session (This correctly sets the key needed for the next page)
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
 
-// Handle login form submission (demo only)
-loginForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
+        const redirect = user.role === "Admin"
+            ? "dashboard.html"  // Admin goes to dashboard.html
+            : "attendance.html"; // Employee goes to attendance.html
 
-    console.log('Login attempt:', { email, password });
+        // The instant redirect should now succeed for both roles.
+        window.location.href = redirect;
+    });
 
-    // ✅ Demo login check (no database yet)
-    // You can replace this email with any sample you want
-    const demoEmail = "earvinjohnlopez01@gmail.com";
-
-    if (email === demoEmail && password !== "") {
-
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userEmail", email);
-
-    showLoginSuccess();
-
-   // Unified Success Popup
-function showLoginSuccess() {
-    const modal = document.getElementById("loginSuccessModal");
-    const title = document.getElementById("successTitle");
-    const message = document.getElementById("successMessage");
-
-    title.textContent = "Login Successful";
-    message.textContent = "Redirecting...";
-
-    modal.classList.remove("hidden");
-
-    setTimeout(() => {
-        modal.classList.add("fade-out");
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 300);
-    }, 1500);
-}
-
-
-} else {
-    alert('Invalid credentials. Please use the demo email.');
-}
-
-});
-
-/// Handle login form submission
-loginForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    const demoEmail = "earvinjohnlopez01@gmail.com";
-
-    if (email === demoEmail && password !== "") {
-        // Save session
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userEmail', email);
-
-        // Show login success modal
-        const modal = document.getElementById('loginSuccessModal');
-        modal.style.display = 'flex';
-
-        // Countdown text
-        let countdown = 2;
-        const msg = modal.querySelector('p');
-        msg.textContent = `Login successful! Redirecting in ${countdown}...`;
-
-        const interval = setInterval(() => {
-            countdown--;
-            msg.textContent = `Login successful! Redirecting in ${countdown}...`;
-            if (countdown <= 0) {
-                clearInterval(interval);
-                modal.classList.add('fade-out');
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 300);
-            }
-        }, 1000);
-
-    } else {
-        alert('Invalid credentials. Please use the demo email.');
-    }
-});
-
-// Handle Create Account button
-document.querySelector('.btn-secondary').addEventListener('click', function() {
-    window.location.href = "createaccount.html";
-});
-
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.style.display === 'block') {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+    // --- CREATE ACCOUNT BUTTON ---
+    if (createBtn) { // Safety check added
+        createBtn.addEventListener("click", () => {
+            window.location.href = "createaccount.html";
+        });
     }
 });

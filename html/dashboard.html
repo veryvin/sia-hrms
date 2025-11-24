@@ -1,117 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RMT HRMS Dashboard</title>
-  <link rel="stylesheet" href="../css/dashboard.css" />
+<script>
+    // --- Define Constants and Current Page ---
+    const hrOnlyPages = [
+        "dashboard.html", "employee.html", "employee_add.html", 
+        "employee_edit.html", "employee_view.html", "payroll.html", "reports.html"
+    ];
 
+    const currentPage = window.location.pathname.split("/").pop();
+    const loggedInUserString = localStorage.getItem('loggedInUser');
+
+    // --- Protection Check 1: Is the user logged in at all? ---
+    if (!loggedInUserString) {
+        // If not logged in, redirect immediately.
+        window.location.href = "index.html";
+    } else {
+        // --- Protection Check 2: Role-Based Access Control (RBAC) ---
+        const loggedInUser = JSON.parse(loggedInUserString);
+        const userRole = loggedInUser.role; // 'Admin' or 'Employee'
+
+        // If Employee (E1001) tries to access the Dashboard, redirect to Attendance.
+        if (userRole === "Employee" && hrOnlyPages.includes(currentPage)) {
+            window.location.href = "attendance.html";
+        }
+        // If the role is 'Admin', the script passes, and the page loads.
+    }
+</script>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RMT HRMS Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css" />
 </head>
 <body>
-  <div class="container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <h2 class="logo">RMT HRMS</h2>
-      <p class="subtitle">Human Resource Management</p>
-      <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+    <div class="container">
+        <aside class="sidebar">
+            <h2 class="logo">RMT HRMS</h2>
+            <p class="subtitle">Human Resource Management</p>
+            <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
 
-<script>
-  const userEmail = localStorage.getItem('userEmail');
-  document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-</script>
+            <nav class="nav" id="sidebarNav">
+                <a href="dashboard.html" class="nav-item" id="navDashboard">🏠 Dashboard</a>
+                <a href="employee.html" class="nav-item" id="navEmployees">👥 Employees</a>
+                <a href="attendance.html" class="nav-item" id="navAttendance">🕒 Attendance</a>
+                <a href="leave.html" class="nav-item" id="navLeave">📄 Leave Management</a>
+                <a href="payroll.html" class="nav-item" id="navPayroll">💲 Payroll</a>
+                <a href="reports.html" class="nav-item" id="navReports">📊 Reports</a>
+            </nav>
+        </aside>
 
-      <nav class="nav">
-        <a href="dashboard.html" class="nav-item active">🏠 Dashboard</a>
-        <a href="employee.html" class="nav-item">👥 Employees</a>
-        <a href="attendance.html" class="nav-item">🕒 Attendance</a>
-        <a href="leave.html" class="nav-item">📄 Leave Management</a>
-        <a href="payroll.html" class="nav-item">💲 Payroll</a>
-        <a href="reports.html" class="nav-item">📊 Reports</a>
-      </nav>
-    </aside>
+        <script>
+            // Get the centralized user object (guaranteed to exist here by the top script)
+            const storedUserString = localStorage.getItem('loggedInUser');
+            const user = storedUserString ? JSON.parse(storedUserString) : {};
+            
+            const userEmail = user.email || 'N/A';
+            const userRole = user.role; 
 
+            // Display the correct welcome message
+            document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+
+            // Sidebar links
+            const navDashboard = document.getElementById('navDashboard');
+            const navEmployees = document.getElementById('navEmployees');
+            const navPayroll = document.getElementById('navPayroll');
+            const navReports = document.getElementById('navReports');
+
+            if(userRole === 'Employee') {
+                // Employees can only see Attendance and Leave (Hiding admin links)
+                if (navDashboard) navDashboard.style.display = 'none';
+                if (navEmployees) navEmployees.style.display = 'none';
+                if (navPayroll) navPayroll.style.display = 'none';
+                if (navReports) navReports.style.display = 'none';
+            } 
+        </script>
+
+
+        <main class="main">
+            <header>
+                <h1>Dashboard</h1>
+                <p>Overview of HR operations</p>
+            </header>
+
+            <section class="stats">
+                <div class="card">
+                    <h3>Total Employees</h3>
+                    <p class="number">3</p>
+                    <span>3 Active</span>
+                </div>
+                <div class="card">
+                    <h3>Present Today</h3>
+                    <p class="number">0</p>
+                    <span>Out of 3</span>
+                </div>
+                <div class="card">
+                    <h3>Pending Leaves</h3>
+                    <p class="number">0</p>
+                    <span>Awaiting approval</span>
+                </div>
+                <div class="card">
+                    <h3>Monthly Payroll</h3>
+                    <p class="number">₱0</p>
+                    <span>0 processed</span>
+                </div>
+            </section>
+
+            <section class="bottom-section">
+                <div class="panel">
+                    <h3>Recent Leave Requests</h3>
+                    <p>No leave requests yet</p>
+                </div>
+                <div class="panel">
+                    <h3>Department Distribution</h3>
+                    <div class="dept">
+                        <span>Product Department</span>
+                        <div class="bar"><div class="fill" style="width: 70%;"></div></div>
+                        <span class="count">2 employees</span>
+                    </div>
+                    <div class="dept">
+                        <span>Project Management</span>
+                        <div class="bar"><div class="fill" style="width: 40%;"></div></div>
+                        <span class="count">1 employee</span>
+                    </div>
+                    <p class="note">📈 All departments operational</p>
+                </div>
+            </section>
+        </main>
+    </div>
     
-
-<script>
-  document.getElementById('logoutBtn').addEventListener('click', function() {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    window.location.href = 'index.html';
-  });
-</script>
-
-
-    <!-- Main Content -->
-    <main class="main">
-      <header>
-        <h1>Dashboard</h1>
-        <p>Overview of HR operations</p>
-      </header>
-
-      <!-- Stats Boxes -->
-      <section class="stats">
-        <div class="card">
-          <h3>Total Employees</h3>
-          <p class="number">3</p>
-          <span>3 Active</span>
+    <div class="user-menu">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+        <div class="dropdown-menu" id="dropdownMenu">
+            <p id="userEmailDisplay"></p>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
         </div>
-        <div class="card">
-          <h3>Present Today</h3>
-          <p class="number">0</p>
-          <span>Out of 3</span>
-        </div>
-        <div class="card">
-          <h3>Pending Leaves</h3>
-          <p class="number">0</p>
-          <span>Awaiting approval</span>
-        </div>
-        <div class="card">
-          <h3>Monthly Payroll</h3>
-          <p class="number">₱0</p>
-          <span>0 processed</span>
-        </div>
-      </section>
-
-      <!-- Lower Panels -->
-      <section class="bottom-section">
-        <div class="panel">
-          <h3>Recent Leave Requests</h3>
-          <p>No leave requests yet</p>
-        </div>
-        <div class="panel">
-          <h3>Department Distribution</h3>
-          <div class="dept">
-            <span>Product Department</span>
-            <div class="bar"><div class="fill" style="width: 70%;"></div></div>
-            <span class="count">2 employees</span>
-          </div>
-          <div class="dept">
-            <span>Project Management</span>
-            <div class="bar"><div class="fill" style="width: 40%;"></div></div>
-            <span class="count">1 employee</span>
-          </div>
-          <p class="note">📈 All departments operational</p>
-        </div>
-      </section>
-    </main>
-  </div>
-  <!-- User Menu (Top Right) -->
-<div class="user-menu">
-  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
-  <div class="dropdown-menu" id="dropdownMenu">
-      <p id="userEmailDisplay"></p>
-      <button id="logoutBtn" class="btn btn-secondary">Logout</button>
-  </div>
-</div>
+    </div>
 
 
-  <script src="../js/dashboard.js"></script>
-  <script>
-  // Redirect back to login if user isn't logged in
-  if (!localStorage.getItem('isLoggedIn')) {
-    window.location.href = 'index.html';
-  }
-</script>
+    <script>
+        // Ensure the logout button works using the centralized key
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('loggedInUser'); // Remove the centralized key
+            window.location.href = 'index.html';
+        });
+    </script>
+    
+    <script src="../js/dashboard.js"></script>
 
 </body>
 </html>

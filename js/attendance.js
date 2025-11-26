@@ -11,6 +11,7 @@ function getRecords() {
         return [];
     }
 }
+
 function saveRecords(data) {
     localStorage.setItem(ATT_KEY, JSON.stringify(data));
 }
@@ -18,35 +19,36 @@ function saveRecords(data) {
 /* ===============================
    HELPERS
 ================================ */
-// Parse a time string like "08:30:00 AM" into seconds since 00:00
+// Parse "08:30:00 AM" → seconds
 function parseTimeToSeconds(t) {
-    if (!t) return null;
-    // Accept either "HH:MM:SS AM/PM" or "H:MM:SS AM/PM"
+    if (!t || t === "--") return null;
     const m = t.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
     if (!m) return null;
+
     let hh = parseInt(m[1], 10);
     const mm = parseInt(m[2], 10);
     const ss = parseInt(m[3], 10);
     const ampm = m[4].toUpperCase();
+
     if (ampm === "AM") {
         if (hh === 12) hh = 0;
     } else {
         if (hh !== 12) hh += 12;
     }
+
     return hh * 3600 + mm * 60 + ss;
 }
 
 function computeHours(timeIn, timeOut) {
-    if (!timeIn || !timeOut) return "--";
+    if (!timeIn || !timeOut || timeOut === "--") return "--";
     const s1 = parseTimeToSeconds(timeIn);
     const s2 = parseTimeToSeconds(timeOut);
     if (s1 === null || s2 === null) return "--";
+
     let diffSec = s2 - s1;
-    // crossing midnight?
     if (diffSec < 0) diffSec += 24 * 3600;
-    const hours = diffSec / 3600;
-    // round to 2 decimals
-    return hours.toFixed(2);
+
+    return (diffSec / 3600).toFixed(2);
 }
 
 /* ===============================
@@ -56,28 +58,90 @@ if (window.location.pathname.includes("attendance.html")) {
 
     const dateInput = document.getElementById("attendanceDate");
     const searchInput = document.getElementById("search");
-    const tableElement = document.querySelector("table");
+    const tableElement = document.getElementById("attendanceTable");
     const totalAttendance = document.getElementById("totalAttendance");
+    const logAttendanceBtn = document.getElementById("logAttendanceBtn");
 
-    // Pagination state
     let currentPage = 1;
     const rowsPerPage = 10;
     let filteredData = [];
 
-    // Set today’s date
     const today = new Date().toISOString().split("T")[0];
     dateInput.value = today;
 
-    /* -----------------------------------
-       MAIN LOADING FUNCTION
-    ----------------------------------- */
+    // Get logged in user info
+    const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
+    const userRole = loggedInUser.role || 'Employee';
+    const userId = loggedInUser.id || '';
+
+    // Create sample data if empty
+    if (getRecords().length === 0) {
+        saveRecords([
+            {
+                id: "hr",
+                name: "HR Admin",
+                department: "Human Resources",
+                position: "HR Manager",
+                date: today,
+                timeIn: "08:00:00 AM",
+                timeOut: "05:00:00 PM"
+            },
+            {
+                id: "emp",
+                name: "John Doe",
+                department: "Sales",
+                position: "Sales Associate",
+                date: today,
+                timeIn: "08:15:00 AM",
+                timeOut: "--"
+            }
+        ]);
+    }
+
+    /* ---------------------------
+       ROLE-BASED UI ADJUSTMENTS
+    --------------------------- */
+    function adjustUIForRole() {
+        if (userRole === "Employee") {
+            // Hide search box for employees (they only see their own data)
+            if (searchInput) {
+                searchInput.parentElement.style.display = "none";
+            }
+            
+            // Hide the "Log Attendance" button for employees (optional)
+            // Uncomment if you don't want employees to manually log attendance
+            // if (logAttendanceBtn) {
+            //     logAttendanceBtn.style.display = "none";
+            // }
+            
+            // Change the header text
+            const header = document.querySelector("header h1");
+            if (header) {
+                header.textContent = "My Attendance";
+            }
+            
+            const headerDesc = document.querySelector("header p");
+            if (headerDesc) {
+                headerDesc.textContent = "View your time and attendance records";
+            }
+        }
+    }
+
+    /* ---------------------------
+       MAIN TABLE LOADING (UPDATED)
+    --------------------------- */
     function loadTable() {
         const selectedDate = dateInput.value;
         const searchValue = searchInput.value.toLowerCase();
 
-        const all = getRecords();
+        let all = getRecords();
 
-        // Filter by date + search (search both id & name)
+        // 🔥 FILTER BY ROLE: Employees only see their own records
+        if (userRole === "Employee") {
+            all = all.filter(r => r.id === userId);
+        }
+
+        // Apply date and search filters
         filteredData = all.filter(r =>
             r.date === selectedDate &&
             (
@@ -90,75 +154,75 @@ if (window.location.pathname.includes("attendance.html")) {
         renderPaginatedTable();
     }
 
-    /* -----------------------------------
-       Update total attendance label
-    ----------------------------------- */
     function updateTotalAttendance(count) {
-        totalAttendance.textContent = `Total Attendance: ${count}`;
+        if (userRole === "Employee") {
+            totalAttendance.textContent = `My Records: ${count}`;
+        } else {
+            totalAttendance.textContent = `Total Attendance: ${count}`;
+        }
     }
 
-    /* -----------------------------------
-       Render Pagination Table
-    ----------------------------------- */
+    /* ---------------------------
+       PAGINATION
+    --------------------------- */
     function renderPaginatedTable() {
         const start = (currentPage - 1) * rowsPerPage;
         const end = start + rowsPerPage;
 
-        const paginatedRows = filteredData.slice(start, end);
-
-        renderTable(paginatedRows);
+        renderTable(filteredData.slice(start, end));
         renderPaginationControls();
     }
 
-    /* -----------------------------------
-       Render Table Rows
-    ----------------------------------- */
+    /* ---------------------------
+       RENDER TABLE ROWS
+    --------------------------- */
     function renderTable(list) {
-        let html = `
-        <thead>
-            <tr>
-              <th>EMPLOYEE ID</th>
-              <th>EMPLOYEE NAME</th>
-              <th>DEPARTMENT</th>
-              <th>POSITION</th>
-              <th>DATE</th>
-              <th>TIME IN</th>
-              <th>TIME OUT</th>
-              <th>TOTAL HOURS</th>
-            </tr>
-        </thead>
-        <tbody>
-        `;
+        let html = "";
 
         if (list.length === 0) {
-            html += `<tr><td colspan="9" style="text-align:center;">No records found</td></tr>`;
+            html = `<tr><td colspan="8" style="text-align:center;">No records found</td></tr>`;
         } else {
             list.forEach(r => {
-                const showLogout = r.timeOut === null;
-                const timeOutDisplay = r.timeOut ? r.timeOut : "--";
                 const totalHours = computeHours(r.timeIn, r.timeOut);
 
                 html += `
-                <tr>
-                    <td>${r.id}</td>
-                    <td>${r.name}</td>
-                    <td>${r.department}</td>
-                    <td>${r.position}</td>
-                    <td>${r.date}</td>
-                    <td>${r.timeIn}</td>
-                    <td>${timeOutDisplay}</td>
-                    <td>${totalHours}</td>
-                </tr>`;
+                    <tr>
+                        <td>${r.id}</td>
+                        <td>${r.name}</td>
+                        <td>${r.department}</td>
+                        <td>${r.position}</td>
+                        <td>${r.date}</td>
+                        <td>${r.timeIn}</td>
+                        <td>${r.timeOut}</td>
+                        <td>
+                            ${
+                                r.timeOut === "--" ?
+                                `<button 
+                                    onclick="goLogout('${r.id}')"
+                                    style="
+                                        background:#e74c3c;
+                                        color:white;
+                                        padding:6px 10px;
+                                        border:none;
+                                        border-radius:4px;
+                                        cursor:pointer;
+                                        font-weight:bold;
+                                    "
+                                >Logout</button>` :
+                                `<span style="color:gray;font-size:12px;">${totalHours} hrs</span>`
+                            }
+                        </td>
+                    </tr>
+                `;
             });
         }
 
-        html += `</tbody>`;
         tableElement.innerHTML = html;
     }
 
-    /* -----------------------------------
-       Pagination Buttons
-    ----------------------------------- */
+    /* ---------------------------
+       PAGINATION BUTTONS
+    --------------------------- */
     function renderPaginationControls() {
         let paginationDiv = document.getElementById("paginationControls");
 
@@ -169,17 +233,25 @@ if (window.location.pathname.includes("attendance.html")) {
             paginationDiv.style.display = "flex";
             paginationDiv.style.justifyContent = "center";
             paginationDiv.style.gap = "10px";
-            tableElement.insertAdjacentElement("afterend", paginationDiv);
+            document.querySelector(".main").appendChild(paginationDiv);
         }
 
         const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
 
         paginationDiv.innerHTML = `
-            <div style = "display: flex; justify-content: center;">
-            <button style ="background: #8e44ad; color: white; border: none; padding: 10px; border-radius: 3px;" ${currentPage === 1 ? "disabled" : ""} onclick="prevPage()">Previous</button>
+            <button 
+                style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
+                ${currentPage === 1 ? "disabled" : ""}
+                onclick="prevPage()"
+            >Previous</button>
+
             <span>Page ${currentPage} of ${totalPages}</span>
-            <button style ="background: #8e44ad; color: white; border: none; padding: 10px; border-radius: 3px;" ${currentPage === totalPages ? "disabled" : ""} onclick="nextPage()">Next</button>
-            </div>
+
+            <button 
+                style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
+                ${currentPage === totalPages ? "disabled" : ""}
+                onclick="nextPage()"
+            >Next</button>
         `;
     }
 
@@ -198,17 +270,48 @@ if (window.location.pathname.includes("attendance.html")) {
         }
     };
 
-    /* EVENT LISTENERS */
-    dateInput.addEventListener("change", () => { currentPage = 1; loadTable(); });
-    searchInput.addEventListener("input", () => { currentPage = 1; loadTable(); });
+    /* ---------------------------
+       LOGOUT BUTTON
+    --------------------------- */
+    window.goLogout = function(empId) {
+        const all = getRecords();
+        const record = all.find(r => r.id === empId && r.timeOut === "--");
 
-    // If you have a button to add manual Time In (btn-green), ensure it exists before adding handler
-    const btnGreen = document.querySelector(".btn-green");
-    if (btnGreen) {
-        btnGreen.addEventListener("click", () => {
-            window.location.href = "attendance_login.html";
+        if (record) {
+            const now = new Date();
+            record.timeOut = now.toLocaleTimeString(
+                'en-US',
+                { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }
+            );
+
+            saveRecords(all);
+            loadTable();
+            alert("Successfully logged out!");
+        }
+    };
+
+    /* ---------------------------
+       LOG ATTENDANCE BUTTON
+    --------------------------- */
+    if (logAttendanceBtn) {
+        logAttendanceBtn.addEventListener("click", () => {
+            if (typeof showTimeTracker === 'function') {
+                showTimeTracker();
+            } else {
+                window.location.href = "in&out.html";
+            }
         });
     }
 
+    /* ---------------------------
+       EVENT LISTENERS
+    --------------------------- */
+    dateInput.addEventListener("change", () => { currentPage = 1; loadTable(); });
+    searchInput.addEventListener("input", () => { currentPage = 1; loadTable(); });
+
+    // Apply role-based UI changes
+    adjustUIForRole();
+    
+    // Initial load
     loadTable();
 }

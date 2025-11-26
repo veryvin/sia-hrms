@@ -81,56 +81,42 @@
             <section class="stats">
                 <div class="card">
                     <h3>Total Employees</h3>
-                    <p class="number">3</p>
-                    <span>3 Active</span>
+                    <p class="number" id="totalEmployees">0</p>
+                    <span id="activeEmployees">0 Active</span>
                 </div>
                 <div class="card">
                     <h3>Present Today</h3>
-                    <p class="number">0</p>
-                    <span>Out of 3</span>
+                    <p class="number" id="presentToday">0</p>
+                    <span id="presentTodayText">Out of 0</span>
                 </div>
                 <div class="card">
                     <h3>Pending Leaves</h3>
-                    <p class="number">0</p>
+                    <p class="number" id="pendingLeaves">0</p>
                     <span>Awaiting approval</span>
                 </div>
                 <div class="card">
                     <h3>Monthly Payroll</h3>
-                    <p class="number">₱0</p>
-                    <span>0 processed</span>
+                    <p class="number" id="monthlyPayroll">₱0</p>
+                    <span id="payrollProcessed">0 processed</span>
                 </div>
             </section>
 
             <section class="bottom-section">
                 <div class="panel">
                     <h3>Recent Leave Requests</h3>
-                    <p>No leave requests yet</p>
+                    <div id="leaveRequestsList">
+                        <p>No leave requests yet</p>
+                    </div>
                 </div>
                 <div class="panel">
                     <h3>Department Distribution</h3>
-                    <div class="dept">
-                        <span>Product Department</span>
-                        <div class="bar"><div class="fill" style="width: 70%;"></div></div>
-                        <span class="count">2 employees</span>
+                    <div id="departmentDistribution">
+                        <!-- Will be populated by JS -->
                     </div>
-                    <div class="dept">
-                        <span>Project Management</span>
-                        <div class="bar"><div class="fill" style="width: 40%;"></div></div>
-                        <span class="count">1 employee</span>
-                    </div>
-                    <p class="note">📈 All departments operational</p>
                 </div>
             </section>
         </main>
     </div>
-
-    <script>
-        // Set welcome text
-        const storedUserString = localStorage.getItem('loggedInUser');
-        const user = storedUserString ? JSON.parse(storedUserString) : {};
-        const userEmail = user.email || 'N/A';
-        document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-    </script>
 
     <!-- Animated Sidebar Script -->
     <script>
@@ -189,6 +175,19 @@
             const userIcon = document.getElementById("userIcon");
             const dropdownMenu = document.getElementById("dropdownMenu");
             const logoutBtn = document.getElementById("logoutBtn");
+            const userEmailDisplay = document.getElementById("userEmailDisplay");
+
+            // Get user data
+            const storedUserString = localStorage.getItem('loggedInUser');
+            const user = storedUserString ? JSON.parse(storedUserString) : {};
+            const userEmail = user.email || 'N/A';
+
+            // Set welcome text
+            document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+            
+            if (userEmailDisplay) {
+                userEmailDisplay.textContent = userEmail;
+            }
 
             userIcon?.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -206,11 +205,6 @@
                 localStorage.removeItem("userEmail");
                 window.location.href = "index.html";
             });
-
-            const userEmailDisplay = document.getElementById("userEmailDisplay");
-            if (userEmailDisplay) {
-                userEmailDisplay.textContent = userEmail;
-            }
 
             // Role-based visibility
             const userRole = user.role;

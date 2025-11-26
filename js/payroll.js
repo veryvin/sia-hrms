@@ -43,8 +43,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsModal = document.getElementById("detailsModal");
   const closeDetailsModal = document.getElementById("closeDetailsModal");
   const closeDetailsBtn = document.getElementById("closeDetailsBtn");
+  const printReceiptBtn = document.getElementById("printReceiptBtn");
+  
+  const userIcon = document.getElementById("userIcon");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  const logoutBtn = document.getElementById("logoutBtn");
 
   let payrollRecords = JSON.parse(localStorage.getItem("payrollRecords")) || [];
+
+  // ===================================================
+  // USER MENU DROPDOWN
+  // ===================================================
+  userIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdownMenu.classList.toggle("show");
+  });
+
+  window.addEventListener("click", (e) => {
+    if (!e.target.closest(".user-menu")) {
+      dropdownMenu.classList.remove("show");
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("userEmail");
+    window.location.href = "index.html";
+  });
 
   // ===================================================
   // REAL-TIME SUMMARY
@@ -169,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===================================================
   function renderPayroll() {
     if (payrollRecords.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="10" class="empty">No payroll records found</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="9" class="empty">No payroll records found</td></tr>`;
       return;
     }
 
@@ -184,7 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>₱${p.totalDeductions.toLocaleString("en-PH",{ minimumFractionDigits:2 })}</td>
         <td>₱${p.netPay.toLocaleString("en-PH",{ minimumFractionDigits:2 })}</td>
         <td>
-          <span class="status-badge">${p.status}</span>
           <div class="action-buttons">
             <button class="view-btn" onclick="showPayrollDetails(${p.id})">👁 View</button>
             <button class="delete-btn" onclick="deletePayroll(${p.id})">🗑 Delete</button>
@@ -240,6 +264,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     detailsModal.style.display = "flex";
   };
+
+  // ===================================================
+  // PRINT RECEIPT
+  // ===================================================
+  printReceiptBtn.addEventListener("click", () => {
+    window.print();
+  });
 
   // ===================================================
   // SUMMARY CARDS

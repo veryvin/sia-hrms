@@ -1,4 +1,363 @@
-/* Reset */
+/* ===== ANIMATED SIDEBAR CSS ===== */
+.sidebar {
+  width: 70px;
+  background: #fff;
+  height: 100vh;
+  border-right: 1px solid #e5e5e5;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: fixed;
+  left: 0;
+  top: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar.expanded {
+  width: 280px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.hamburger-btn {
+  position: absolute;
+  top: 20px;
+  right: -40px;
+  width: 35px;
+  height: 35px;
+  background: #2d6e4e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+
+.hamburger-btn:hover {
+  background: #1f4a34;
+  transform: translateX(-2px);
+}
+
+.hamburger-btn span {
+  width: 18px;
+  height: 2.5px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.expanded .hamburger-btn span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.sidebar.expanded .hamburger-btn span:nth-child(2) {
+  opacity: 0;
+}
+
+.sidebar.expanded .hamburger-btn span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+.sidebar-header {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 3px solid #2d6e4e;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.sidebar.expanded .sidebar-header {
+  opacity: 1;
+}
+
+.logo-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.sidebar-logo {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.sidebar:not(.expanded) .sidebar-logo {
+  width: 35px;
+  height: 35px;
+  margin: 0 auto;
+}
+
+.sidebar:not(.expanded) .logo-box {
+  justify-content: center;
+}
+
+.company-info {
+  flex: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.expanded .company-info {
+  opacity: 1;
+}
+
+.sidebar .logo {
+  color: #2d6e4e;
+  font-size: 1.2rem;
+  margin: 0;
+  margin-bottom: 2px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.company-subtitle {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.company-details {
+  background: #f0fdf4;
+  border-left: 3px solid #2d6e4e;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.expanded .company-details {
+  opacity: 1;
+}
+
+.detail-item {
+  font-size: 0.7rem;
+  color: #374151;
+  margin: 3px 0;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.detail-item:first-child {
+  color: #2d6e4e;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+#welcomeText {
+  font-size: 0.85rem;
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  color: #16a34a;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar.expanded #welcomeText {
+  opacity: 1;
+}
+
+.sidebar:not(.expanded) #welcomeText {
+  display: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  flex: 1;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #374151;
+  padding: 10px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+}
+
+.sidebar:not(.expanded) .nav-item {
+  justify-content: center;
+  padding: 10px;
+}
+
+.nav-item-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  min-width: 20px;
+  text-align: center;
+}
+
+.nav-item-text {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.sidebar.expanded .nav-item-text {
+  opacity: 1;
+}
+
+.sidebar:not(.expanded) .nav-item-text {
+  position: absolute;
+  left: 70px;
+  background: #2d6e4e;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  transition: opacity 0.2s ease, left 0.2s ease;
+}
+
+.sidebar:not(.expanded) .nav-item:hover .nav-item-text {
+  opacity: 1;
+  left: 65px;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+  color: #2d6e4e;
+}
+
+.nav-item.active {
+  background: #dcfce7;
+  color: #15803d;
+  border-left: 3px solid #2d6e4e;
+  padding-left: 9px;
+}
+
+.sidebar:not(.expanded) .nav-item.active {
+  padding-left: 10px;
+  border-left: none;
+  border-right: 3px solid #2d6e4e;
+}
+
+.user-menu-sidebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid #e5e7eb;
+  justify-content: center;
+}
+
+.sidebar.expanded .user-menu-sidebar {
+  justify-content: flex-start;
+}
+
+.user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #2d6e4e;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.user-icon:hover {
+  border-color: #16a34a;
+  box-shadow: 0 0 8px rgba(45, 110, 78, 0.2);
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  background-color: #fff;
+  border: 1px solid #2d6e4e;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-menu p {
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #2d6e4e;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  background-color: #2d6e4e;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.dropdown-menu button:hover {
+  background-color: #1f4a34;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #2d6e4e;
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #16a34a;
+}
+
+/* ===== ORIGINAL REPORTS CSS ===== */
 * {
     margin: 0;
     padding: 0;
@@ -6,78 +365,34 @@
     font-family: "Inter", sans-serif;
 }
 
-/* Layout */
+body {
+  background-color: #f9fafb;
+}
+
 .container {
     display: flex;
-}
-
-/* Sidebar (Minor enhancements) */
-.sidebar {
-    width: 240px;
-    background: #fff;
-    height: 100vh;
-    border-right: none; 
-    box-shadow: 1px 0 5px rgba(0, 0, 0, 0.05);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar .logo {
-    color: #16a34a;
-    font-size: 1.4rem;
-    margin-bottom: 5px;
-}
-
-.sidebar .subtitle {
-    font-size: 0.8rem;
-    color: #6b7280;
-    margin-bottom: 20px;
-}
-
-.sidebar #welcomeText {
-    font-size: 0.85rem;
-    margin-bottom: 20px;
-}
-
-.nav {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.nav-item {
-    text-decoration: none;
-    color: #374151;
-    padding: 8px 12px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.2s;
-}
-
-.nav-item:hover {
-    background: #f3f4f6;
-}
-
-.nav-item.active {
-    background: #dcfce7;
-    color: #15803d;
-}
-
-/* Main Section */
-.main {
-    flex: 1;
-    padding: 30px 40px;
-    background: #f4f7f9; /* Lighter background */
     min-height: 100vh;
 }
 
-/* Header */
+.main {
+    flex: 1;
+    margin-left: 70px;
+    padding: 30px 40px;
+    background: #f4f7f9;
+    min-height: 100vh;
+    overflow-y: auto;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.expanded ~ .main {
+    margin-left: 280px;
+}
+
 .header h2 {
     font-size: 26px;
     font-weight: 700;
     color: #333;
+    margin-bottom: 5px;
 }
 
 .header p {
@@ -86,12 +401,12 @@
     margin-bottom: 20px;
 }
 
-/* --- TAB NAVIGATION (Modern Line Style) --- */
 .tab-navigation {
     display: flex;
     margin: 15px 0 30px 0;
     border-bottom: 2px solid #ddd;
 }
+
 .tab-btn {
     background: none;
     border: none;
@@ -103,19 +418,18 @@
     border-bottom: 3px solid transparent;
     transition: all 0.3s ease;
 }
+
 .tab-btn.active {
-    color: #10B981; /* Primary brand color */
-    border-bottom: 3px solid #10B981;
+    color: #2d6e4e;
+    border-bottom: 3px solid #2d6e4e;
     background: none;
 }
+
 .tab-btn:hover {
-    color: #10B981;
+    color: #2d6e4e;
 }
 
-
-/* --- STATS GRID LAYOUT (Modern Look) --- */
 .stats-grid {
-    /* Main layout: 3 equal columns */
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
@@ -126,38 +440,39 @@
     background: #fff;
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Stronger, softer shadow */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease;
-    border: 1px solid #f0f0f0; /* Soft border */
-}
-.card:hover {
-    transform: translateY(-3px); /* Noticeable lift */
+    border: 1px solid #f0f0f0;
 }
 
-/* --- KEY STAT CARDS (Top Row KPIs) --- */
+.card:hover {
+    transform: translateY(-3px);
+}
+
 .key-stat h3 {
     font-size: 14px;
     color: #999;
     margin-bottom: 15px;
     font-weight: 500;
 }
+
 .key-stat .number {
     font-size: 36px;
     font-weight: 700;
     color: #222;
     margin-bottom: 5px;
 }
+
 .key-stat .sub-text {
     font-size: 13px;
-    color: #10B981; /* Positive accent color */
+    color: #2d6e4e;
     font-weight: 500;
 }
+
 .key-stat .rate-green {
-    color: #10B981; 
+    color: #2d6e4e;
 }
 
-
-/* --- CHART PANELS (Wider elements below) --- */
 .chart-panel {
     grid-column: span 1;
     min-height: 350px;
@@ -179,16 +494,10 @@
     max-height: 300px !important;
 }
 
-/* Make Chart Panels Span Correctly */
 .full-width {
-    grid-column: span 3; /* Spans all 3 columns */
+    grid-column: span 3;
 }
 
-.half-width {
-    grid-column: span 1; /* Spans 1 column */
-}
-
-/* --- ATTENDANCE TAB STYLES --- */
 .attendance-cards {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -214,12 +523,11 @@
     margin-top: 10px;
 }
 
-.summary-card.green { border-left: 4px solid #10B981; }
+.summary-card.green { border-left: 4px solid #2d6e4e; }
 .summary-card.yellow { border-left: 4px solid #F59E0B; }
 .summary-card.red { border-left: 4px solid #EF4444; }
 .summary-card.gray { border-left: 4px solid #9CA3AF; }
 
-/* Tab Content Visibility */
 .tab-content {
     display: none !important;
 }
@@ -228,18 +536,22 @@
     display: block !important;
 }
 
-/* Report Tables */
+.tab-content.hidden {
+    display: none !important;
+}
+
 .report-table {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid #eee; 
+    border: 1px solid #eee;
     box-shadow: 0 2px 5px rgba(0,0,0,0.03);
 }
 
-.report-table th, .report-table td {
+.report-table th, 
+.report-table td {
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
     text-align: left;
@@ -247,7 +559,7 @@
 }
 
 .report-table th {
-    background: #f9fafb; 
+    background: #f9fafb;
     font-weight: 600;
     color: #333;
 }
@@ -256,81 +568,56 @@
     border-bottom: none;
 }
 
+@media (max-width: 1024px) {
+    .main {
+        margin-left: 70px;
+    }
 
-/* ------------------------------------------------------------------ */
-/* 🟢 FIX FOR USER MENU, AVATAR, AND BROKEN LOGOUT BUTTON */
-/* --- NEW: Moved to Top Right and Increased Icon Size --- */
-/* ------------------------------------------------------------------ */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 
-/* 1. Position the user-menu (Avatar & Dropdown) on the top right */
-.user-menu {
-    position: fixed;
-    /* CHANGE: Remove left/bottom, add top/right */
-    top: 20px; 
-    right: 30px; /* Give a little more margin than the top */
-    z-index: 1000; 
-    cursor: pointer;
-    /* Use flexbox to align the icon/menu vertically, but stack the dropdown */
-    display: flex;
-    flex-direction: column; /* Stacks the dropdown right under the icon */
-    align-items: flex-end; /* Aligns contents to the right (useful for the dropdown) */
+    .full-width {
+        grid-column: span 2;
+    }
 }
 
-/* 2. Style the User Icon/Avatar (Made larger) */
-.user-icon {
-    /* CHANGE: Increased size from 40px to 50px */
-    width: 50px; 
-    height: 50px;
-    border-radius: 50%; 
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); 
-    border: 2px solid #fff;
-    margin-bottom: 5px; /* Added slight margin below icon */
-}
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+    }
 
-/* 3. Style the Dropdown Menu (The box containing the Logout button) */
-.dropdown-menu {
-    position: absolute;
-    /* CHANGE: Position the dropdown to open below the icon and aligned to the right */
-    top: 60px; /* Position below the 50px icon + margin */
-    right: 0; /* Aligns the right edge of the dropdown with the icon */
-    
-    width: 180px; 
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    display: none; 
-    flex-direction: column;
-    gap: 10px;
-}
+    .sidebar.expanded {
+        transform: translateX(0);
+    }
 
-/* 4. Style the User Email Display */
-#userEmailDisplay {
-    font-size: 0.9rem;
-    color: #333;
-    font-weight: 600;
-    margin-bottom: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+    .hamburger-btn {
+        right: -50px;
+    }
 
-/* 5. FIX FOR THE LOGOUT BUTTON */
-#logoutBtn {
-    width: 100%;
-    padding: 8px 15px;
-    font-size: 14px; 
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: 6px;
-    border: none;
-    text-align: center;
-    background-color: #f3f4f6; 
-    color: #6b7280; 
-    transition: background-color 0.2s;
-}
+    .main {
+        margin-left: 0 !important;
+        padding: 20px;
+    }
 
-#logoutBtn:hover {
-    background-color: #e5e7eb;
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full-width {
+        grid-column: span 1;
+    }
+
+    .attendance-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .chart-row-compact {
+        flex-direction: column !important;
+    }
+
+    .chart-row-compact > div {
+        width: 100% !important;
+    }
 }

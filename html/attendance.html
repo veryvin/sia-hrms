@@ -1,7 +1,6 @@
-  <!DOCTYPE html>
-  <html lang="en">
-    <script>
-    // --- Define Constants and Current Page ---
+<!DOCTYPE html>
+<html lang="en">
+  <script>
     const hrOnlyPages = [
         "dashboard.html", "employee.html", "employee_add.html", 
         "employee_edit.html", "employee_view.html", "payroll.html", "reports.html"
@@ -10,52 +9,65 @@
     const currentPage = window.location.pathname.split("/").pop();
     const loggedInUserString = localStorage.getItem('loggedInUser');
 
-    // --- Protection Check 1: Is the user logged in at all? ---
     if (!loggedInUserString) {
-        // If not logged in, redirect immediately.
         window.location.href = "index.html";
     } else {
-        // --- Protection Check 2: Role-Based Access Control (RBAC) ---
         const loggedInUser = JSON.parse(loggedInUserString);
-        const userRole = loggedInUser.role; // 'Admin' or 'Employee'
+        const userRole = loggedInUser.role;
 
-        // If Employee accesses an HR-only page, redirect to Attendance.
         if (userRole === "Employee" && hrOnlyPages.includes(currentPage)) {
             window.location.href = "attendance.html";
         }
     }
-</script>
+  </script>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Attendance Tracking</title>
     <link rel="stylesheet" href="../css/attendance.css" />
-
   </head>
   <body>
     <div class="container">
-      <!-- Sidebar -->
+      <!-- Animated Sidebar -->
       <aside class="sidebar">
-        <h2 class="logo">RMT HRMS</h2>
-        <p class="subtitle">Human Resource Management</p>
-        <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
-        
-        <script>
-          const userEmail = localStorage.getItem('userEmail');
-          document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-        </script>
+        <div class="sidebar-header">
+          <div class="logo-box">
+            <img src="../images/rmt2.png" alt="RMT Logo" class="sidebar-logo">
+            <div class="company-info">
+              <h2 class="logo">RMT MARKETING</h2>
+              <p class="company-subtitle">Human Resource Management</p>
+            </div>
+          </div>
+          <div class="company-details">
+            <p class="detail-item">SmartStock Medical Supply Trading</p>
+            <p class="detail-item">1234 MedTech Avenue, Quezon City, Philippines</p>
+            <p class="detail-item">📞 (02) 8888-1234 | ✉️ smartstock.ph@gmail.com</p>
+            <p class="detail-item">VAT Reg. TIN: 123-456-789-000</p>
+            <p class="detail-item">NON-VAT Registered</p>
+          </div>
+        </div>
 
-        <nav class="nav">
-          <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
-          <a href="employee.html" class="nav-item">👥 Employees</a>
-          <a href="attendance.html" class="nav-item active">🕒 Attendance</a>
-          <a href="leave.html" class="nav-item">📄 Leave Management</a>
-          <a href="payroll.html" class="nav-item">💲 Payroll</a>
-          <a href="reports.html" class="nav-item">📊 Reports</a>
+        <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+
+        <nav class="nav" id="sidebarNav">
+          <a href="dashboard.html" class="nav-item" id="navDashboard">🏠 Dashboard</a>
+          <a href="employee.html" class="nav-item" id="navEmployees">👥 Employees</a>
+          <a href="attendance.html" class="nav-item" id="navAttendance">🕒 Attendance</a>
+          <a href="leave.html" class="nav-item" id="navLeave">📄 Leave Management</a>
+          <a href="payroll.html" class="nav-item" id="navPayroll">💲 Payroll</a>
+          <a href="reports.html" class="nav-item" id="navReports">📊 Reports</a>
         </nav>
+
+        <div class="user-menu-sidebar">
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+          <div class="dropdown-menu" id="dropdownMenu">
+            <p id="userEmailDisplay"></p>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+          </div>
+        </div>
       </aside>
 
-    <!-- Main Content -->
+      <!-- Main Content -->
       <main class="main">
         <header>
           <h1>Attendance Tracking</h1>
@@ -90,11 +102,94 @@
               <th>ACTIONS</th>
             </tr>
           </thead>
+          <tbody id="attendanceTable"></tbody>
+        </table>
       </main>
     </div>
 
-    <script src="../js/attendance.js"></script>
-    
+    <script>
+      const userEmail = localStorage.getItem('userEmail');
+      document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+    </script>
 
+    <!-- Animated Sidebar Script -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.querySelector(".sidebar");
+        
+        if (!document.querySelector(".hamburger-btn")) {
+          const hamburger = document.createElement("button");
+          hamburger.className = "hamburger-btn";
+          hamburger.innerHTML = '<span></span><span></span><span></span>';
+          sidebar.appendChild(hamburger);
+        }
+
+        const hamburger = document.querySelector(".hamburger-btn");
+        let isExpanded = false;
+        let hoverTimeout;
+
+        hamburger.addEventListener("click", (e) => {
+          e.stopPropagation();
+          isExpanded = !isExpanded;
+          sidebar.classList.toggle("expanded", isExpanded);
+        });
+
+        sidebar.addEventListener("mouseenter", () => {
+          clearTimeout(hoverTimeout);
+          sidebar.classList.add("expanded");
+        });
+
+        sidebar.addEventListener("mouseleave", () => {
+          if (!isExpanded) {
+            hoverTimeout = setTimeout(() => {
+              sidebar.classList.remove("expanded");
+            }, 300);
+          }
+        });
+
+        const navItems = document.querySelectorAll(".nav-item");
+        navItems.forEach(item => {
+          const text = item.textContent.trim();
+          const icon = text.split(" ")[0];
+          const label = text.substring(icon.length).trim();
+          item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
+        });
+
+        const currentPage = window.location.pathname.split("/").pop();
+        navItems.forEach(item => {
+          if (item.getAttribute("href") === currentPage) {
+            item.classList.add("active");
+          }
+        });
+
+        const userIcon = document.getElementById("userIcon");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        userIcon?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          dropdownMenu.classList.toggle("show");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!e.target.closest(".user-menu-sidebar")) {
+            dropdownMenu.classList.remove("show");
+          }
+        });
+
+        logoutBtn?.addEventListener("click", () => {
+          localStorage.removeItem("loggedInUser");
+          localStorage.removeItem("userEmail");
+          window.location.href = "index.html";
+        });
+
+        const userEmailDisplay = document.getElementById("userEmailDisplay");
+        if (userEmailDisplay && userEmail) {
+          userEmailDisplay.textContent = userEmail;
+        }
+      });
+    </script>
+
+    <script src="../js/attendance.js"></script>
   </body>
-  </html>
+</html>

@@ -12,18 +12,15 @@
 
     // --- Protection Check 1: Is the user logged in at all? ---
     if (!loggedInUserString) {
-        // If not logged in, redirect immediately.
         window.location.href = "index.html";
     } else {
         // --- Protection Check 2: Role-Based Access Control (RBAC) ---
         const loggedInUser = JSON.parse(loggedInUserString);
-        const userRole = loggedInUser.role; // 'Admin' or 'Employee'
+        const userRole = loggedInUser.role;
 
-        // If Employee (E1001) tries to access the Dashboard, redirect to Attendance.
         if (userRole === "Employee" && hrOnlyPages.includes(currentPage)) {
             window.location.href = "attendance.html";
         }
-        // If the role is 'Admin', the script passes, and the page loads.
     }
 </script>
 <head>
@@ -34,9 +31,26 @@
 </head>
 <body>
     <div class="container">
+        <!-- Animated Sidebar -->
         <aside class="sidebar">
-            <h2 class="logo">RMT HRMS</h2>
-            <p class="subtitle">Human Resource Management</p>
+            <!-- Logo and Company Header -->
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <img src="../images/rmt2.png" alt="RMT Logo" class="sidebar-logo">
+                    <div class="company-info">
+                        <h2 class="logo">RMT MARKETING</h2>
+                        <p class="company-subtitle">Human Resource Management</p>
+                    </div>
+                </div>
+                <div class="company-details">
+                    <p class="detail-item">SmartStock Medical Supply Trading</p>
+                    <p class="detail-item">1234 MedTech Avenue, Quezon City, Philippines</p>
+                    <p class="detail-item">📞 (02) 8888-1234 | ✉️ smartstock.ph@gmail.com</p>
+                    <p class="detail-item">VAT Reg. TIN: 123-456-789-000</p>
+                    <p class="detail-item">NON-VAT Registered</p>
+                </div>
+            </div>
+
             <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
 
             <nav class="nav" id="sidebarNav">
@@ -47,34 +61,16 @@
                 <a href="payroll.html" class="nav-item" id="navPayroll">💲 Payroll</a>
                 <a href="reports.html" class="nav-item" id="navReports">📊 Reports</a>
             </nav>
+
+            <!-- User Menu -->
+            <div class="user-menu-sidebar">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <p id="userEmailDisplay"></p>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
         </aside>
-
-        <script>
-            // Get the centralized user object (guaranteed to exist here by the top script)
-            const storedUserString = localStorage.getItem('loggedInUser');
-            const user = storedUserString ? JSON.parse(storedUserString) : {};
-            
-            const userEmail = user.email || 'N/A';
-            const userRole = user.role; 
-
-            // Display the correct welcome message
-            document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-
-            // Sidebar links
-            const navDashboard = document.getElementById('navDashboard');
-            const navEmployees = document.getElementById('navEmployees');
-            const navPayroll = document.getElementById('navPayroll');
-            const navReports = document.getElementById('navReports');
-
-            if(userRole === 'Employee') {
-                // Employees can only see Attendance and Leave (Hiding admin links)
-                if (navDashboard) navDashboard.style.display = 'none';
-                if (navEmployees) navEmployees.style.display = 'none';
-                if (navPayroll) navPayroll.style.display = 'none';
-                if (navReports) navReports.style.display = 'none';
-            } 
-        </script>
-
 
         <main class="main">
             <header>
@@ -127,25 +123,106 @@
             </section>
         </main>
     </div>
-    
-    <div class="user-menu">
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
-        <div class="dropdown-menu" id="dropdownMenu">
-            <p id="userEmailDisplay"></p>
-            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
-        </div>
-    </div>
-
 
     <script>
-        // Ensure the logout button works using the centralized key
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            localStorage.removeItem('loggedInUser'); // Remove the centralized key
-            window.location.href = 'index.html';
+        // Set welcome text
+        const storedUserString = localStorage.getItem('loggedInUser');
+        const user = storedUserString ? JSON.parse(storedUserString) : {};
+        const userEmail = user.email || 'N/A';
+        document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+    </script>
+
+    <!-- Animated Sidebar Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sidebar = document.querySelector(".sidebar");
+            
+            // Create hamburger button
+            if (!document.querySelector(".hamburger-btn")) {
+                const hamburger = document.createElement("button");
+                hamburger.className = "hamburger-btn";
+                hamburger.innerHTML = '<span></span><span></span><span></span>';
+                sidebar.appendChild(hamburger);
+            }
+
+            const hamburger = document.querySelector(".hamburger-btn");
+            let isExpanded = false;
+            let hoverTimeout;
+
+            hamburger.addEventListener("click", (e) => {
+                e.stopPropagation();
+                isExpanded = !isExpanded;
+                sidebar.classList.toggle("expanded", isExpanded);
+            });
+
+            sidebar.addEventListener("mouseenter", () => {
+                clearTimeout(hoverTimeout);
+                sidebar.classList.add("expanded");
+            });
+
+            sidebar.addEventListener("mouseleave", () => {
+                if (!isExpanded) {
+                    hoverTimeout = setTimeout(() => {
+                        sidebar.classList.remove("expanded");
+                    }, 300);
+                }
+            });
+
+            // Update nav items structure
+            const navItems = document.querySelectorAll(".nav-item");
+            navItems.forEach(item => {
+                const text = item.textContent.trim();
+                const icon = text.split(" ")[0];
+                const label = text.substring(icon.length).trim();
+                item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
+            });
+
+            // Set active nav item
+            const currentPage = window.location.pathname.split("/").pop();
+            navItems.forEach(item => {
+                if (item.getAttribute("href") === currentPage) {
+                    item.classList.add("active");
+                }
+            });
+
+            // User menu functionality
+            const userIcon = document.getElementById("userIcon");
+            const dropdownMenu = document.getElementById("dropdownMenu");
+            const logoutBtn = document.getElementById("logoutBtn");
+
+            userIcon?.addEventListener("click", (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle("show");
+            });
+
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest(".user-menu-sidebar")) {
+                    dropdownMenu.classList.remove("show");
+                }
+            });
+
+            logoutBtn?.addEventListener("click", () => {
+                localStorage.removeItem("loggedInUser");
+                localStorage.removeItem("userEmail");
+                window.location.href = "index.html";
+            });
+
+            const userEmailDisplay = document.getElementById("userEmailDisplay");
+            if (userEmailDisplay) {
+                userEmailDisplay.textContent = userEmail;
+            }
+
+            // Role-based visibility
+            const userRole = user.role;
+            if (userRole === "Employee") {
+                ["navDashboard", "navEmployees", "navPayroll", "navReports"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = "none";
+                });
+            }
         });
     </script>
     
     <script src="../js/dashboard.js"></script>
-
 </body>
 </html>

@@ -5,45 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RMT HRMS - Login</title>
     <link rel="stylesheet" href="../css/style.css">
-   
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
 </head>
 <body>
     <div class="container">
         <div class="login-card">
-            <!-- Logo Icon -->
             <div class="logo-icon">
-                <div class="logo-icon">
-    <img src="../images/rmt.png" alt="RMT Logo" class="logo-img">
-</div>
-
+                <img src="../images/rmt.png" alt="RMT Logo" class="logo-img">
             </div>
 
-            <!-- Title -->
             <h1 class="title">RMT HRMS</h1>
             <p class="subtitle">Human Resources Management System</p>
 
-            <!-- Login Form -->
             <form class="login-form" id="loginForm">
                 <div class="form-group">
-                    <label for="employeeId">Employee ID</label>
-                    <input type="text" id="employeeId" required placeholder="Try: hr or emp">
+                    <label for="employeeId">Employee ID (Must be Email)</label>
+                    <input type="text" id="employeeId" required placeholder="Try: hr@example.com">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" required placeholder="Try: hr or emp">
+                    <input type="password" id="password" required placeholder="Enter password">
+                </div>
+
+                <div class="form-options">
+                    <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot Password?</a>
                 </div>
 
                 <div id="errorMessage" class="error-message" style="display:none;"></div>
 
                 <button type="submit" id="loginBtn" class="btn btn-primary">Log In</button>
-                <button type="button" id="createBtn" class="btn btn-secondary">Create an Account</button>
+                <button type="button" id="createBtn" class="btn btn-secondary" onclick="window.location.href='createaccount.html';">Create an Account</button>
             </form>
 
         </div>
     </div>
 
-    <!-- Forgot Password Modal -->
     <div id="forgotPasswordModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -59,10 +57,8 @@
         </div>
     </div>
 
-    <!-- Your JS file -->
-      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/index.js"></script>
 
+    <script src="/js/index.js"></script>
     
 </body>
 </html>

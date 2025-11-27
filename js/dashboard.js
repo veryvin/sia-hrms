@@ -1,163 +1,220 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // Get data from localStorage
-    const employees = JSON.parse(localStorage.getItem('employees')) || [];
-    const attendanceRecords = JSON.parse(localStorage.getItem('attendance_records')) || [];
-    const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
-    const payrollRecords = JSON.parse(localStorage.getItem('payrollRecords')) || [];
+// /js/dashboard.js - CONSOLIDATED SCRIPT
 
-    // If no data exists, initialize with sample data
-    if (employees.length === 0) {
-        const sampleEmployees = [
-            {
-                empId: "EMP-001",
-                firstName: "Juan",
-                lastName: "Dela Cruz",
-                middleName: "Santos",
-                email: "juan.delacruz@rmt.com",
-                department: "Product Department",
-                position: "Product Manager",
-                status: "Regular",
-                salary: 35000,
-                dob: "1990-05-15",
-                gender: "Male",
-                phone: "+63 912 345 6789",
-                address: "123 Main St, Quezon City",
-                dateHired: "2020-01-15"
-            },
-            {
-                empId: "EMP-002",
-                firstName: "Maria",
-                lastName: "Santos",
-                middleName: "Garcia",
-                email: "maria.santos@rmt.com",
-                department: "Product Department",
-                position: "Product Specialist",
-                status: "Regular",
-                salary: 28000,
-                dob: "1992-08-22",
-                gender: "Female",
-                phone: "+63 923 456 7890",
-                address: "456 Oak Ave, Manila",
-                dateHired: "2021-03-10"
-            },
-            {
-                empId: "EMP-003",
-                firstName: "Pedro",
-                lastName: "Reyes",
-                middleName: "Lopez",
-                email: "pedro.reyes@rmt.com",
-                department: "Project Management",
-                position: "Project Coordinator",
-                status: "Probationary",
-                salary: 25000,
-                dob: "1995-11-30",
-                gender: "Male",
-                phone: "+63 934 567 8901",
-                address: "789 Pine Rd, Makati",
-                dateHired: "2024-09-01"
-            }
-        ];
-        localStorage.setItem('employees', JSON.stringify(sampleEmployees));
+// 1. SUPABASE CLIENT INITIALIZATION
+// ====================================================================
+// !!! Tiyakin na TAMA ang iyong Keys !!!
+const SUPABASE_URL = 'https://pheupnmnisguenfqaphs.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZXVwbm1uaXNndWVuZnFhcGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzY2ODcsImV4cCI6MjA3OTgxMjY4N30.CYN8o3ilyeRY1aYLy7Vut47pLskF6gIcBv4zE3kOUqM';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ====================================================================
+
+let activeUser = null;
+let activeProfile = null;
+
+// Pages that only Admin/Manager can view
+const hrOnlyPages = [
+    "dashboard.html", "employee.html", "employee_add.html", 
+    "employee_edit.html", "employee_view.html", "payroll.html", "reports.html"
+];
+const currentPage = window.location.pathname.split("/").pop();
+
+
+// 2. AUTHENTICATION AND PROFILE CHECK (Gagamit ng Supabase imbes na Local Storage)
+// ====================================================================
+async function checkAuthAndFetchProfile() {
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser();
+
+    if (sessionError || !user) {
+        console.error('No active session. Redirecting to login.');
+        return window.location.href = 'index.html'; 
     }
 
-    // Update statistics
-    updateDashboardStats();
-    updateDepartmentDistribution();
-    updateLeaveRequests();
+    activeUser = user;
 
-    function updateDashboardStats() {
-        const employees = JSON.parse(localStorage.getItem('employees')) || [];
-        const attendanceRecords = JSON.parse(localStorage.getItem('attendance_records')) || [];
-        const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
-        const payrollRecords = JSON.parse(localStorage.getItem('payrollRecords')) || [];
+    // I-fetch ang user profile kasama ang role
+    const { data: profileData, error: profileError } = await supabase
+        .from('employees')
+        .select(`
+            id, 
+            first_name, 
+            email, 
+            positions(role_id, roles(role_name)) 
+        `)
+        .eq('id', activeUser.id)
+        .single();
 
-        // Total Employees
-        const totalEmp = employees.length;
-        const activeEmp = employees.filter(e => e.status === 'Regular' || e.status === 'Probationary').length;
-        document.getElementById('totalEmployees').textContent = totalEmp;
-        document.getElementById('activeEmployees').textContent = `${activeEmp} Active`;
-
-        // Present Today
-        const today = new Date().toISOString().split('T')[0];
-        const todayAttendance = attendanceRecords.filter(r => r.date === today);
-        const presentCount = todayAttendance.filter(r => r.timeIn !== '--').length;
-        document.getElementById('presentToday').textContent = presentCount;
-        document.getElementById('presentTodayText').textContent = `Out of ${totalEmp}`;
-
-        // Pending Leaves
-        const pendingCount = leaveRequests.filter(l => l.status === 'pending').length;
-        document.getElementById('pendingLeaves').textContent = pendingCount;
-
-        // Monthly Payroll
-        const totalPayroll = payrollRecords.reduce((sum, p) => sum + (p.netPay || 0), 0);
-        document.getElementById('monthlyPayroll').textContent = `₱${totalPayroll.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-        document.getElementById('payrollProcessed').textContent = `${payrollRecords.length} processed`;
+    if (profileError || !profileData || !profileData.positions || !profileData.positions.roles) {
+        // Ito ang magre-resolve ng 'User profile not linked' issue kung wala pang profile
+        console.error('Error fetching user profile or profile not found:', profileError || 'Profile data is null.');
+        alert('User profile not linked. Please contact HR.'); 
+        return window.location.href = 'index.html'; 
     }
 
-    function updateDepartmentDistribution() {
-        const employees = JSON.parse(localStorage.getItem('employees')) || [];
-        const deptContainer = document.getElementById('departmentDistribution');
+    activeProfile = {
+        ...profileData,
+        roleName: profileData.positions.roles.role_name
+    };
+
+    // Tiyakin ang Role-Based Redirect bago mag-load ng UI
+    handleRoleRedirect(activeProfile.roleName);
+    
+    // I-update ang UI
+    updateUI();
+    handleRoleVisibility(activeProfile.roleName);
+}
+
+
+// 3. ROLE-BASED REDIRECT CHECK
+// ====================================================================
+function handleRoleRedirect(userRole) {
+    if (userRole === "Employee" && hrOnlyPages.includes(currentPage)) {
+        console.log(`Employee role detected. Redirecting from ${currentPage} to attendance.html.`);
+        window.location.href = "attendance.html";
+        return true;
+    }
+    return false;
+}
+
+// 4. UI UPDATES
+// ====================================================================
+function updateUI() {
+    if (activeProfile) {
+        const userEmail = activeProfile.email || 'N/A';
+        const userRole = activeProfile.roleName || 'N/A';
+        const firstName = activeProfile.first_name || 'User';
+
+        // 1. Welcome Text sa taas ng nav
+        document.getElementById('welcomeText').textContent = `Welcome, ${firstName}! (Role: ${userRole})`;
         
-        // Count employees by department
-        const deptCounts = {};
-        employees.forEach(emp => {
-            const dept = emp.department || 'Unassigned';
-            deptCounts[dept] = (deptCounts[dept] || 0) + 1;
-        });
-
-        // Calculate max for percentage
-        const maxCount = Math.max(...Object.values(deptCounts), 1);
-
-        // Generate HTML
-        let html = '';
-        Object.entries(deptCounts).forEach(([dept, count]) => {
-            const percentage = (count / maxCount) * 100;
-            html += `
-                <div class="dept">
-                    <span>${dept}</span>
-                    <div class="bar">
-                        <div class="fill" style="width: ${percentage}%;"></div>
-                    </div>
-                    <span class="count">${count} employee${count !== 1 ? 's' : ''}</span>
-                </div>
-            `;
-        });
-
-        html += `<p class="note">📈 Total: ${employees.length} employees across ${Object.keys(deptCounts).length} departments</p>`;
-        deptContainer.innerHTML = html;
-    }
-
-    function updateLeaveRequests() {
-        const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
-        const leaveContainer = document.getElementById('leaveRequestsList');
-        
-        const recentLeaves = leaveRequests.slice(-5).reverse();
-
-        if (recentLeaves.length === 0) {
-            leaveContainer.innerHTML = '<p>No leave requests yet</p>';
-            return;
+        // 2. User Menu Display (Lower Left)
+        const userEmailDisplay = document.getElementById("userEmailDisplay");
+        if (userEmailDisplay) {
+             userEmailDisplay.textContent = userEmail;
         }
-
-        let html = '<div style="max-height: 300px; overflow-y: auto;">';
-        recentLeaves.forEach(leave => {
-            const statusClass = leave.status === 'pending' ? 'warning' : 
-                              leave.status === 'approved' ? 'success' : 'danger';
-            html += `
-                <div style="padding: 10px; margin-bottom: 8px; border-left: 3px solid var(--${statusClass}); background: #f9f9f9; border-radius: 4px;">
-                    <strong>${leave.employee}</strong> - ${leave.leaveType}<br>
-                    <small>${leave.startDate} to ${leave.endDate}</small><br>
-                    <span class="badge badge-${statusClass}">${leave.status}</span>
-                </div>
-            `;
-        });
-        html += '</div>';
-        leaveContainer.innerHTML = html;
+        
+        // (Dito ilalagay ang logic para i-fetch at i-update ang stats data)
     }
+}
 
-    // Refresh data every 30 seconds
-    setInterval(() => {
-        updateDashboardStats();
-        updateDepartmentDistribution();
-        updateLeaveRequests();
-    }, 30000);
+// 5. ROLE-BASED VISIBILITY (I-hide ang nav links)
+// ====================================================================
+function handleRoleVisibility(userRole) {
+    const hiddenLinkIds = ["navEmployees", "navPayroll", "navReports"];
+
+    // Ipakita lahat muna (Default)
+    hiddenLinkIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "";
+    });
+
+    // Itago kung Employee lang
+    if (userRole === "Employee") {
+        hiddenLinkIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = "none";
+        });
+    }
+}
+
+// 6. LOGOUT FUNCTION
+// ====================================================================
+function setupLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Logout Error:', error);
+            } else {
+                // Clear any leftover local storage data
+                localStorage.clear(); 
+                window.location.href = 'index.html';
+            }
+        });
+    }
+}
+
+
+// 7. SIDEBAR ANIMATION AND DROPDOWN SETUP (Galing sa embedded script mo)
+// ====================================================================
+function setupUIListeners() {
+    const sidebar = document.querySelector(".sidebar");
+    const navItems = document.querySelectorAll(".nav-item");
+    const userIcon = document.getElementById("userIcon");
+    const dropdownMenu = document.getElementById("dropdownMenu");
+
+    // --- Hamburger/Sidebar Setup ---
+    if (!document.querySelector(".hamburger-btn")) {
+        const hamburger = document.createElement("button");
+        hamburger.className = "hamburger-btn";
+        hamburger.innerHTML = '<span></span><span></span><span></span>';
+        sidebar.appendChild(hamburger);
+    }
+    const hamburger = document.querySelector(".hamburger-btn");
+    let isExpanded = false;
+    let hoverTimeout;
+
+    // Sidebar Toggling Logic
+    hamburger?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        isExpanded = !isExpanded;
+        sidebar.classList.toggle("expanded", isExpanded);
+    });
+
+    // Sidebar Hover Logic
+    sidebar.addEventListener("mouseenter", () => {
+        clearTimeout(hoverTimeout);
+        sidebar.classList.add("expanded");
+    });
+
+    sidebar.addEventListener("mouseleave", () => {
+        if (!isExpanded) {
+            hoverTimeout = setTimeout(() => {
+                sidebar.classList.remove("expanded");
+            }, 300);
+        }
+    });
+
+    // --- Nav Item Structure and Active State ---
+    navItems.forEach(item => {
+        const text = item.textContent.trim();
+        const icon = text.split(" ")[0]; // Kukunin ang emoji
+        const label = text.substring(icon.length).trim();
+        item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
+
+        // Set active nav item
+        if (item.getAttribute("href") === currentPage) {
+            item.classList.add("active");
+        } else {
+            item.classList.remove("active");
+        }
+    });
+
+    // --- User Icon Dropdown Logic (Lower Left) ---
+    userIcon?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdownMenu.classList.toggle("show");
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".user-menu-sidebar")) {
+            dropdownMenu.classList.remove("show");
+        }
+    });
+}
+
+
+// 8. INITIALIZATION
+// ====================================================================
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. I-setup ang lahat ng UI listeners (Sidebar, Dropdown, Nav)
+    setupUIListeners(); 
+    
+    // 2. I-setup ang Logout
+    setupLogout();
+
+    // 3. I-check ang Auth at i-load ang data
+    checkAuthAndFetchProfile(); 
 });

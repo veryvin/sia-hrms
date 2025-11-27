@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time In / Time Out - RMT</title>
+
+    <link rel="stylesheet" href="../css/in&out.css">
+</head>
+<body>
+
+    <div class="modal-overlay show" id="modalOverlay">
+        <div class="time-tracker-container">
+            
+            <div class="tracker-header">
+                <div class="logo-wrapper">
+                    <img src="/images/rmt2.png" alt="RMT Logo" class="logo-img">
+                    <span class="logo-text">RMT</span>
+                </div>
+                <div class="tracker-title">Time Management</div>
+                <div class="tracker-subtitle">Employee Attendance System</div>
+            </div>
+
+            <div class="time-display">
+                <div class="label">Current Time</div>
+                <div class="current-time" id="currentTime">00:00:00 AM</div>
+                <div class="current-date" id="currentDate">Loading...</div>
+            </div>
+
+            <div class="employee-info">
+                <div class="info-row">
+                    <span class="info-label">Employee ID:</span>
+                    <input type="text" id="inputEmpId" class="info-input" placeholder="Enter ID">
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <input type="text" id="inputName" class="info-input" placeholder="Enter Name">
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Department:</span>
+                    <input type="text" id="inputDepartment" class="info-input" placeholder="Enter Department">
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Position:</span>
+                    <input type="text" id="inputPosition" class="info-input" placeholder="Enter Position">
+                </div>
+            </div>
+
+            <div class="alert" id="alertBox"></div>
+
+            <div class="button-group">
+                <button class="btn btn-login" id="btnTimeIn">
+                    <span class="icon">↓</span> TIME IN
+                </button>
+                <button class="btn btn-logout" id="btnTimeOut">
+                    <span class="icon">↑</span> TIME OUT
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="../js/in&out.js"></script>
+</body>
+</html>

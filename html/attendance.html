@@ -47,8 +47,16 @@
         </header>
 
         <section class="controls">
-          <input type="date" id="attendanceDate" />
-          <button class="btn-green" id="openModalBtn">+ Log Attendance</button>
+          <div>
+            <label for="attendanceDate">DATE:</label>
+            <input type="date" id="attendanceDate" />
+          </div>
+
+          <h3 id="totalAttendance">Total Attendance: 0</h3>
+
+          <div>
+            <button class="btn-green" id="logAttendanceBtn">+ Log Attendance</button>
+          </div>
         </section>
 
         <section class="employee-list">
@@ -58,18 +66,22 @@
             <button class="btn-gray log-btn">Log Attendance</button>
           </div>
 
-          <div class="employee-card">
-            <h3>Moreno, Leigh</h3>
-            <p>UI/UX Designer</p>
-            <button class="btn-gray log-btn">Log Attendance</button>
-          </div>
+        <table>
+          <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Position</th>
+                <th>Date</th>
+                <th>Time In</th>
+                <th>Time Out</th>
+                <th>Total Hours</th>
+            </tr>
+          </thead>
 
-          <div class="employee-card">
-            <h3>Veloria, Arjie</h3>
-            <p>UI/UX Designer</p>
-            <button class="btn-gray log-btn">Log Attendance</button>
-          </div>
-        </section>
+          <tbody id="attendanceTable"></tbody>
+        </table>
       </main>
     </div>
 <!-- Log Attendance Modal -->
@@ -78,10 +90,14 @@
     <span class="close-btn" id="closeModal">&times;</span>
     <h3>Add New Employee</h3>
 
-    <form id="attendanceForm">
-      <label for="employee">Employee</label>
-      <input type="text" id="employee" placeholder="Enter employee name" required>
+    <script>
+      const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
+      const userEmail = loggedInUser.email || 'N/A';
+      document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+      document.getElementById('userEmailDisplay').textContent = userEmail;
+    </script>
 
+      <form id="attendanceForm">
       <label for="date">Date</label>
       <input type="date" id="date" required>
 
@@ -110,6 +126,76 @@
   </div>
 </div>
 
+    <script>
+      // Optional UI wiring merged from upstream/main: sidebar, nav and dropdown behavior.
+      document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.querySelector('.sidebar');
+        let isExpanded = false;
+        let hoverTimeout = null;
+
+        if (sidebar) {
+          sidebar.addEventListener('mouseenter', () => {
+            clearTimeout(hoverTimeout);
+            sidebar.classList.add('expanded');
+            isExpanded = true;
+          });
+
+          sidebar.addEventListener('mouseleave', () => {
+            if (!isExpanded) return;
+            hoverTimeout = setTimeout(() => {
+              sidebar.classList.remove('expanded');
+              isExpanded = false;
+            }, 300);
+          });
+        }
+
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+          const text = item.textContent.trim();
+          const icon = text.split(' ')[0];
+          const label = text.substring(icon.length).trim();
+          item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
+        });
+
+        // Highlight active page
+        const currentPage = window.location.pathname.split('/').pop();
+        navItems.forEach(item => {
+          if (item.getAttribute('href') === currentPage) item.classList.add('active');
+        });
+
+        // Dropdown
+        const userIcon = document.getElementById('userIcon');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        userIcon?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdownMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.user-menu')) {
+            dropdownMenu.classList.remove('show');
+          }
+        });
+
+        logoutBtn?.addEventListener('click', () => {
+          localStorage.removeItem('loggedInUser');
+          localStorage.removeItem('userEmail');
+          window.location.href = 'index.html';
+        });
+
+        // Role-based sidebar visibility (if loggedInUser exists)
+        const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
+        if (loggedInUser && loggedInUser.role === 'Employee') {
+          ['navDashboard', 'navEmployees', 'navPayroll', 'navReports'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
+        }
+      });
+    </script>
+
     <script src="../js/attendance.js"></script>
   </body>
-  </html>
+</html>

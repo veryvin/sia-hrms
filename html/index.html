@@ -25,23 +25,23 @@
             <!-- Login Form -->
             <form class="login-form" id="loginForm">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="employeeId">Employee ID</label>
+                    <input type="text" id="employeeId" required placeholder="Try: hr or emp">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                    <a href="#" class="forgot-password" id="forgotPasswordLink">Forgot Password?</a>
+                    <input type="password" id="password" required placeholder="Try: hr or emp">
                 </div>
 
-                <button type="submit" class="btn btn-primary">Log In</button>
-                <button type="button" class="btn btn-secondary">Create an Account</button>
+                <div id="errorMessage" class="error-message" style="display:none;"></div>
+
+                <button type="submit" id="loginBtn" class="btn btn-primary">Log In</button>
+                <button type="button" id="createBtn" class="btn btn-secondary">Create an Account</button>
             </form>
 
         </div>
     </div>
-    
 
     <!-- Forgot Password Modal -->
     <div id="forgotPasswordModal" class="modal">

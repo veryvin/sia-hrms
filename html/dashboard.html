@@ -73,43 +73,75 @@
         </aside>
 
         <main class="main">
-            <header>
-                <h1>Dashboard</h1>
-                <p>Overview of HR operations</p>
+            <header class="dashboard-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Overview of HR operations</p>
+                </div>
+                <div class="header-date">
+                    <span class="date-icon">📅</span>
+                    <span id="currentDate"></span>
+                </div>
             </header>
 
             <section class="stats">
-                <div class="card">
-                    <h3>Total Employees</h3>
-                    <p class="number" id="totalEmployees">0</p>
-                    <span id="activeEmployees">0 Active</span>
+                <div class="card card-blue">
+                    <div class="card-icon">
+                        <img src="../images/employee.png" alt="Employees">
+                    </div>
+                    <div class="card-content">
+                        <h3>Total Employees</h3>
+                        <p class="number" id="totalEmployees">0</p>
+                        <span class="status-badge badge-success" id="activeEmployees">0 Active</span>
+                    </div>
                 </div>
-                <div class="card">
-                    <h3>Present Today</h3>
-                    <p class="number" id="presentToday">0</p>
-                    <span id="presentTodayText">Out of 0</span>
+                <div class="card card-green">
+                    <div class="card-icon">
+                        <img src="../images/attendance.png" alt="Attendance">
+                    </div>
+                    <div class="card-content">
+                        <h3>Present Today</h3>
+                        <p class="number" id="presentToday">0</p>
+                        <span class="status-badge badge-info" id="presentTodayText">Out of 0</span>
+                    </div>
                 </div>
-                <div class="card">
-                    <h3>Pending Leaves</h3>
-                    <p class="number" id="pendingLeaves">0</p>
-                    <span>Awaiting approval</span>
+                <div class="card card-orange">
+                    <div class="card-icon">
+                        <img src="../images/leave.png" alt="Leaves">
+                    </div>
+                    <div class="card-content">
+                        <h3>Pending Leaves</h3>
+                        <p class="number" id="pendingLeaves">0</p>
+                        <span class="status-badge badge-warning">Awaiting approval</span>
+                    </div>
                 </div>
-                <div class="card">
-                    <h3>Monthly Payroll</h3>
-                    <p class="number" id="monthlyPayroll">₱0</p>
-                    <span id="payrollProcessed">0 processed</span>
+                <div class="card card-purple">
+                    <div class="card-icon">
+                        <img src="../images/payroll.png" alt="Payroll">
+                    </div>
+                    <div class="card-content">
+                        <h3>Monthly Payroll</h3>
+                        <p class="number" id="monthlyPayroll">₱0</p>
+                        <span class="status-badge badge-primary" id="payrollProcessed">0 processed</span>
+                    </div>
                 </div>
             </section>
 
             <section class="bottom-section">
                 <div class="panel">
-                    <h3>Recent Leave Requests</h3>
+                    <div class="panel-header">
+                        <h3>📋 Recent Leave Requests</h3>
+                        <span class="view-all">View All →</span>
+                    </div>
                     <div id="leaveRequestsList">
                         <p>No leave requests yet</p>
                     </div>
                 </div>
                 <div class="panel">
-                    <h3>Department Distribution</h3>
+                    <div class="panel-header">
+                        <h3>🏢 Department Distribution</h3>
+                        <span class="view-all">View Details →</span>
+                    </div>
                     <div id="departmentDistribution">
                         <!-- Will be populated by JS -->
                     </div>
@@ -214,6 +246,12 @@
                     if (el) el.style.display = "none";
                 });
             }
+
+            // Display current date
+            const dateElement = document.getElementById('currentDate');
+            const today = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = today.toLocaleDateString('en-US', options);
         });
     </script>
     

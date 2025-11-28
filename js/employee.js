@@ -1,252 +1,139 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; // Import ang function
+// /js/employee.js
+import { supabase, supabaseHelper } from './supabaseClient.js';
 
-// ** KRITIKAL: SUPABASE INITIALIZATION **
-// Palitan ang mga ito ng inyong aktwal na Supabase credentials!
-const SUPABASE_URL = 'https://pheupnmnisguenfqaphs.supabase.co'; 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZXVwbm1uaXNndWVuZnFhcGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzY2ODcsImV4cCI6MjA3OTgxMjY4N30.CYN8o3ilyeRY1aYLy7Vut47pLskF6gIcBv4zE3kOUqM';
+document.addEventListener("DOMContentLoaded", async () => {
 
-// I-EXPORT ang supabase client
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-import { supabase } from './dashboard.js';
-
-/* ====================================================================
-   I. UTILITIES (Para sa redirects)
-==================================================================== */
-
-function getQueryParam(name) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
-}
-
-
-/* ====================================================================
-   II. UI UTILITIES (Sidebar & Logout)
-==================================================================== */
-
-/**
- * Initializes the Sidebar UI behavior and user menu.
- */
-function initSidebarUI() {
-    const sidebar = document.querySelector(".sidebar");
-    const navItems = document.querySelectorAll(".nav-item");
-    const userIcon = document.getElementById("userIcon");
-    const dropdownMenu = document.getElementById("dropdownMenu");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const userEmailDisplay = document.getElementById("userEmailDisplay");
-    
-    // FETCHING USER INFO (Ito ang nawawala sa inyong snippet, idinagdag ko ulit)
+    // =====================
+    // 1. Security / User Check
+    // =====================
     const loggedInUserString = localStorage.getItem('loggedInUser');
-    let userEmail = '';
-    
+    const welcomeText = document.getElementById("welcomeText");
+    const userEmailDisplay = document.getElementById("userEmailDisplay");
+
     if (loggedInUserString) {
         const loggedInUser = JSON.parse(loggedInUserString);
-        userEmail = loggedInUser.email;
-        
-        // Welcome Text
-        const welcomeText = document.getElementById('welcomeText');
-        if (welcomeText) welcomeText.textContent = `Welcome, ${loggedInUser.first_name || 'Admin'} (Role: ${loggedInUser.role})`;
+        welcomeText.textContent = `Welcome, ${loggedInUser.first_name || "Admin"} (Role: ${loggedInUser.role})`;
+        userEmailDisplay.textContent = loggedInUser.email;
+    } else {
+        welcomeText.textContent = "Welcome, Guest";
+        userEmailDisplay.textContent = "";
     }
 
-    if (userEmailDisplay && userEmail) {
-        userEmailDisplay.textContent = userEmail;
-    }
-    
-    // --- SIDEBAR ANIMATION LOGIC (Mula sa inyong bagong snippet) ---
-    
-    // Walang need gumawa ng hamburger button, dahil naka-run na ito sa inyong full DCL code.
-    // Ngunit, para hindi mag-error, gagamitin ko ang logic na may conditional check.
-
-    // 1. Create Hamburger Button (Kung hindi pa ito nasa HTML)
-    if (sidebar && !document.querySelector(".hamburger-btn")) {
-        const hamburger = document.createElement("button");
-        hamburger.className = "hamburger-btn";
-        hamburger.innerHTML = '<span></span><span></span><span></span>';
-        sidebar.appendChild(hamburger);
-    }
-    
-    const hamburger = document.querySelector(".hamburger-btn");
-    let isExpanded = false;
-    let hoverTimeout;
-
-    // 2. Click Toggle
-    hamburger?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        isExpanded = !isExpanded;
-        sidebar?.classList.toggle("expanded", isExpanded);
-    });
-
-    // 3. Mouse Enter/Hover Expand
-    sidebar?.addEventListener("mouseenter", () => {
-        clearTimeout(hoverTimeout);
-        sidebar?.classList.add("expanded");
-    });
-
-    // 4. Mouse Leave/Hover Collapse
-    sidebar?.addEventListener("mouseleave", () => {
-        if (!isExpanded) {
-            hoverTimeout = setTimeout(() => {
-                sidebar?.classList.remove("expanded");
-            }, 300);
-        }
-    });
-
-
-    // --- NAV ITEM FORMATTING (Mula sa inyong bagong snippet) ---
-    navItems.forEach(item => {
-        const text = item.textContent.trim();
-        const icon = text.split(" ")[0];
-        const label = text.substring(icon.length).trim();
-        item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
-    });
-
-    // --- ACTIVE NAV ITEM (Mula sa inyong bagong snippet) ---
-    const currentPage = window.location.pathname.split("/").pop();
-    navItems.forEach(item => {
-        if (item.getAttribute("href") === currentPage) {
-            item.classList.add("active");
-        } else {
-            item.classList.remove("active");
-        }
-    });
-
-    // --- LOGOUT & DROPDOWN MENU (Mula sa inyong bagong snippet) ---
-    userIcon?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        dropdownMenu?.classList.toggle("show");
-    });
-
-    document.addEventListener("click", (e) => {
-        if (!e.target.closest(".user-menu-sidebar")) {
-            dropdownMenu?.classList.remove("show");
-        }
-    });
-
-    logoutBtn?.addEventListener("click", () => {
+    // =====================
+    // 2. Sidebar UI
+    // =====================
+    const logoutBtn = document.getElementById("logoutBtn");
+    logoutBtn?.addEventListener("click", async () => {
+        await supabaseHelper.logout();
         localStorage.removeItem("loggedInUser");
-        localStorage.removeItem("userEmail"); // Idinagdag base sa inyong snippet
-        // Add Supabase sign out if implemented: supabase.auth.signOut();
         window.location.href = "index.html";
     });
-}
 
-/* ====================================================================
-   III. RENDER LOGIC (LIST PAGE)
-==================================================================== */
-
-/**
- * Renders the fetched data into the employee list table, matching the screenshot design.
- */
-function renderEmployeeTable(employees) {
-    const employeeListBody = document.getElementById('employeeListBody');
-    if (!employeeListBody) return;
-
-    employeeListBody.innerHTML = ''; 
-    
-    if (employees.length === 0) {
-        employeeListBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No employee records found.</td></tr>';
-        return;
-    }
-
-    employees.forEach(emp => {
-        const row = document.createElement('tr');
-        
-        const fullName = `${emp.last_name}, ${emp.first_name}`;
-        const departmentName = emp.departments?.name || 'N/A';
-        const positionName = emp.positions?.name || 'N/A';
-        
-        // I-format ang sweldo
-        const salaryFormatted = `₱${Number(emp.salary || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-        
-        let statusClass = '';
-        let statusText = emp.status;
-
-        if (emp.status === 'Regular' || emp.status === 'Active') {
-            statusClass = 'status-active';
-        } else if (emp.status === 'Probationary') {
-            statusClass = 'status-warning';
-        } else if (emp.status === 'On Leave') {
-            statusClass = 'status-leave';
-        } else {
-            statusClass = 'status-inactive';
-            statusText = 'Inactive';
-        }
-
-        row.innerHTML = `
-            <td class="employee-details-cell">
-                <strong>${fullName}</strong><br>
-                <small>${emp.email}</small>
-            </td>
-            <td>${positionName}</td>
-            <td>${departmentName}</td>
-            <td><span class="status ${statusClass}">${statusText}</span></td>
-            <td>${salaryFormatted}</td>
-            <td>
-                <button onclick="viewEmployee('${emp.id}')" class="btn-action view">View</button>
-                <button onclick="editEmployee('${emp.id}')" class="btn-action edit">Edit</button>
-                <button onclick="deleteEmployee('${emp.id}', '${fullName}')" class="btn-action delete">Delete</button>
-            </td>
-        `;
-        employeeListBody.appendChild(row);
-    });
-}
-
-// Action Handlers (Redirects)
-function viewEmployee(id) {
-    window.location.href = `employee_view.html?id=${id}`;
-}
-
-function editEmployee(id) {
-    window.location.href = `employee_edit.html?id=${id}`;
-}
-
-
-/* ====================================================================
-   IV. INITIALIZATION
-==================================================================== */
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // KRITIKAL: Tawagin ang function dito
-    // 1. Initialize Sidebar/UI (Sidebar, Dropdown, Logout)
-    initSidebarUI(); 
-    
-    // 2. Employee List Page Initialization
-    const employeeTableBody = document.getElementById('employeeTable'); 
-    const employeeSearch = document.getElementById('search');          
+    // =====================
+    // 3. Add Employee Button
+    // =====================
     const gotoAddBtn = document.getElementById('gotoAdd');
-    const departmentFilter = document.getElementById('departmentFilter');
-
-    if (employeeTableBody) {
-        // Initial data load at filter population
-        await fetchDepartmentsForFilter();
-        await fetchEmployees(); 
-
-        // Set up Event Listeners
-        if (employeeSearch) {
-             let searchTimeout;
-             employeeSearch.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    fetchEmployees(employeeSearch.value.trim(), departmentFilter.value);
-                }, 500); // 500ms debounce
-             });
-        }
-        
-        if (departmentFilter) {
-            departmentFilter.addEventListener('change', () => {
-                 fetchEmployees(employeeSearch.value.trim(), departmentFilter.value);
-            });
-        }
-        
-        if (gotoAddBtn) {
-            gotoAddBtn.addEventListener('click', () => {
-                window.location.href = 'employee_add.html';
-            });
-        }
-        
-        // Gawing available ang action functions sa global scope
-        window.viewEmployee = viewEmployee;
-        window.editEmployee = editEmployee;
-        window.deleteEmployee = deleteEmployee;
+    if (gotoAddBtn) {
+        gotoAddBtn.addEventListener('click', () => {
+            window.location.href = "employee_add.html";
+        });
+    } else {
+        console.error('Add Employee button not found!');
     }
+
+    // =====================
+    // 4. Fetch Departments & Employees
+    // =====================
+    const departmentFilter = document.getElementById("departmentFilter");
+    const searchInput = document.getElementById("search");
+    const employeeTable = document.getElementById("employeeTable");
+    const totalEmployees = document.getElementById("totalEmployees");
+
+    async function fetchDepartments() {
+        const { data, error } = await supabaseHelper.getDepartments();
+        if (error) return console.error(error);
+        data.forEach(dept => {
+            const option = document.createElement("option");
+            option.value = dept.id;
+            option.textContent = dept.department_name;
+            departmentFilter.appendChild(option);
+        });
+    }
+
+    async function fetchEmployees(search = "", departmentId = "") {
+        employeeTable.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>`;
+        const { data: allEmployees, error } = await supabaseHelper.getEmployees();
+        if (error) {
+            employeeTable.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;">Error loading data</td></tr>`;
+            return console.error(error);
+        }
+
+        let filtered = allEmployees;
+        if (search) {
+            const lower = search.toLowerCase();
+            filtered = filtered.filter(emp =>
+                emp.first_name.toLowerCase().includes(lower) ||
+                emp.last_name.toLowerCase().includes(lower) ||
+                emp.email.toLowerCase().includes(lower)
+            );
+        }
+        if (departmentId) filtered = filtered.filter(emp => emp.department_id === departmentId);
+
+        totalEmployees.textContent = `${filtered.length} total employees`;
+
+        employeeTable.innerHTML = filtered.length
+            ? filtered.map(emp => {
+                const fullName = `${emp.last_name}, ${emp.first_name}`;
+                const departmentName = emp.departments?.department_name || "N/A";
+                const positionName = emp.positions?.position_name || "N/A";
+                const salary = `₱${Number(emp.monthly_salary || 0).toLocaleString("en-PH", {minimumFractionDigits:2})}`;
+                let statusClass = "status-inactive", statusText = emp.status || "Inactive";
+                if (emp.status === "Active" || emp.status === "Regular") statusClass = "status-active";
+                else if (emp.status === "Probationary") statusClass = "status-warning";
+                else if (emp.status === "On Leave") statusClass = "status-leave";
+
+                return `<tr>
+                    <td><strong>${fullName}</strong><br><small>${emp.email}</small></td>
+                    <td>${positionName}</td>
+                    <td>${departmentName}</td>
+                    <td><span class="status ${statusClass}">${statusText}</span></td>
+                    <td>${salary}</td>
+                    <td>
+                        <button class="btn-action view" onclick="viewEmployee('${emp.id}')">View</button>
+                        <button class="btn-action edit" onclick="editEmployee('${emp.id}')">Edit</button>
+                        <button class="btn-action delete" onclick="deleteEmployee('${emp.id}', '${fullName}')">Delete</button>
+                    </td>
+                </tr>`;
+            }).join('')
+            : `<tr><td colspan="6" style="text-align:center;">No employees found</td></tr>`;
+    }
+
+    await fetchDepartments();
+    await fetchEmployees();
+
+    // =====================
+    // 5. Search & Filter
+    // =====================
+    let searchTimeout;
+    searchInput?.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetchEmployees(searchInput.value.trim(), departmentFilter.value);
+        }, 300);
+    });
+    departmentFilter?.addEventListener("change", () => {
+        fetchEmployees(searchInput.value.trim(), departmentFilter.value);
+    });
+
+    // =====================
+    // 6. Global Action Functions
+    // =====================
+    window.viewEmployee = id => window.location.href = `employee_view.html?id=${id}`;
+    window.editEmployee = id => window.location.href = `employee_edit.html?id=${id}`;
+    window.deleteEmployee = async (id, name) => {
+        if (!confirm(`Delete ${name}?`)) return;
+        const { error } = await supabase.from('employees').delete().eq('id', id);
+        if (error) alert(`Failed: ${error.message}`);
+        else fetchEmployees();
+    };
 });

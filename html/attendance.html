@@ -24,11 +24,6 @@
     </div>
   </div>
 
-  <script>
-    const userEmail = localStorage.getItem('userEmail');
-    document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-  </script>
-
         <nav class="nav">
           <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
           <a href="employee.html" class="nav-item">👥 Employees</a>
@@ -89,13 +84,6 @@
   <div class="modal-content">
     <span class="close-btn" id="closeModal">&times;</span>
     <h3>Add New Employee</h3>
-
-    <script>
-      const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
-      const userEmail = loggedInUser.email || 'N/A';
-      document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-      document.getElementById('userEmailDisplay').textContent = userEmail;
-    </script>
 
       <form id="attendanceForm">
       <label for="date">Date</label>
@@ -196,6 +184,6 @@
       });
     </script>
 
-    <script src="../js/attendance.js"></script>
+<script type="module" src="../js/attendance.js" defer></script>
   </body>
 </html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Employee</title>
+  <link rel="stylesheet" href="../css/employee.css" />
+</head>
+<body>
+  <div class="container">
+        <aside class="sidebar">
+      <div class="sidebar-header">
+            <div class="logo-box">
+                <img src="../images/rmt2.png" alt="RMT Logo" class="sidebar-logo">
+                <div class="company-info">
+                    <h2 class="logo">RMT MARKETING</h2>
+                    <p class="company-subtitle">Human Resource Management</p>
+                </div>
+            </div>
+            <div class="company-details">
+                <p class="detail-item">SmartStock Medical Supply Trading</p>
+                <p class="detail-item">1234 MedTech Avenue, Quezon City, Philippines</p>
+                <p class="detail-item">📞 (02) 8888-1234 | ✉️ smartstock.ph@gmail.com</p>
+                <p class="detail-item">VAT Reg. TIN: 123-456-789-000</p>
+                <p class="detail-item">NON-VAT Registered</p>
+            </div>
+        </div>
+
+      <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
+
+      <nav class="nav" id="sidebarNav">
+        <a href="dashboard.html" class="nav-item" id="navDashboard">🏠 Dashboard</a>
+        <a href="employee.html" class="nav-item active" id="navEmployees">👥 Employees</a>
+        <a href="attendance.html" class="nav-item" id="navAttendance">🕒 Attendance</a>
+        <a href="leave.html" class="nav-item" id="navLeave">📄 Leave Management</a>
+        <a href="payroll.html" class="nav-item" id="navPayroll">💲 Payroll</a>
+        <a href="reports.html" class="nav-item" id="navReports">📊 Reports</a>
+      </nav>
+
+      <div class="user-menu-sidebar">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+        <div class="dropdown-menu" id="dropdownMenu">
+          <p id="userEmailDisplay"></p>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header>
+            <h2>Add New Employee</h2>
+            <button class="back-btn" onclick="window.location.href='employee.html'">← Back to List</button>
+        </header>
+
+        <form id="employeeForm">
+            <div class="form-container">
+                <div class="form-section">
+                    <div class="form-section-title">📄 Documents & Photo</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <div class="file-upload-container">
+                                <span class="file-upload-label">Employee Photo</span>
+                                <input type="file" id="empPhoto" accept="image/*">
+                                <div class="file-upload-hint">📸 Upload 2x2 ID Photo (JPG, PNG)</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="grid-column: span 2;">
+                            <div class="file-upload-container">
+                                <span class="file-upload-label">Resume / CV / Certificates</span>
+                                <input type="file" id="empFiles" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple>
+                                <div class="file-upload-hint">📎 Upload supporting documents (PDF, Word, Images)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">👤 Personal Information</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Employee ID <span class="required">*</span></label>
+                            <input type="text" id="empId" placeholder="e.g., EMP-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address <span class="required">*</span></label>
+                            <input type="email" id="empEmail" placeholder="email@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number <span class="required">*</span></label>
+                            <input type="text" id="phone" placeholder="+63 XXX XXX XXXX" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>First Name <span class="required">*</span></label>
+                            <input type="text" id="firstName" placeholder="First Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Middle Name <span class="required">*</span></label>
+                            <input type="text" id="middleName" placeholder="Middle Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name <span class="required">*</span></label>
+                            <input type="text" id="lastName" placeholder="Last Name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date of Birth <span class="required">*</span></label>
+                            <input type="date" id="dob" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Gender <span class="required">*</span></label>
+                            <select id="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group"></div>
+
+                        <div class="form-group form-group-full">
+                            <label>Complete Address <span class="required">*</span></label>
+                            <input type="text" id="address" placeholder="Street, Barangay, City, Province" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">💼 Employment Details</div>
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label>Position <span class="required">*</span></label>
+                            <select id="position" required>
+                                <option value="">Select Position</option>
+                                <option value="8f7af0c9-55a7-47f5-bb9f-7e6252b21462">HR Manager</option>
+                                <option value="c52f408d-1b30-4b2e-b5a0-d5f43a703c72">Employee</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date Hired <span class="required">*</span></label>
+                            <input type="date" id="dateHired" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Employment Status <span class="required">*</span></label>
+                            <select id="status" required>
+                                <option value="">Select Status</option>
+                                <option value="Intern">Intern</option>
+                                <option value="Probationary">Probationary</option>
+                                <option value="Regular">Regular</option>
+                                <option value="Resigned">Resigned</option>
+                                <option value="Terminated">Terminated</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Monthly Salary (₱) <span class="required">*</span></label>
+                            <input type="number" id="salary" placeholder="0.00" step="0.01" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="cancelAdd" class="cancel-btn">Cancel</button>
+                    <button type="submit" id="saveAdd" class="save-btn">💾 Save Employee</button>
+                </div>
+            </div>
+        </form>
+    </div>
+  </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
+    <script type="module" src="../js/supabaseClient.js"></script> 
+  <script type="module" src="../js/employee_add.js" defer></script>
+</body>
+</html>

@@ -9,10 +9,8 @@
 </head>
 <body>
   <script>
-    // Redirect if not logged in
-    if (!localStorage.getItem('isLoggedIn')) {
-      window.location.href = 'index.html';
-    }
+    // Remove redirect to allow guest access
+    // Moved auth check to JS module
   </script>
 
   <div class="container">

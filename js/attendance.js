@@ -1,196 +1,134 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // 1. Supabase Initialization
-    // *** REPLACE WITH YOUR ACTUAL KEYS ***
-    const SUPABASE_URL = 'https://kfsjewtfpeohdbxyrlcz.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtmc2pld3RmcGVvaGRieHlybGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzU5NjQsImV4cCI6MjA3OTIxMTk2NH0.wrszJi_YC74iYE7oaHvbWBo5JmfY_Enc8VQg5wwggrw';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // ***********************************
+import supabase from './supabaseClient.js';
+import { initAuthUI } from './auth.js';
 
-function getRecords() {
-    try {
-        return JSON.parse(localStorage.getItem(ATT_KEY)) || [];
-    } catch (e) {
-        console.error("Failed to parse attendance records:", e);
-        return [];
-    }
-}
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize authentication and get logged-in user (may be null for guests)
+    const loggedInUser = initAuthUI();
+    const userRole = loggedInUser?.role || 'Guest';
+    const userId = loggedInUser?.id || null;
 
-function saveRecords(data) {
-    localStorage.setItem(ATT_KEY, JSON.stringify(data));
-}
-
-/* ===============================
-   HELPERS
-================================ */
-// Parse "08:30:00 AM" → seconds
-function parseTimeToSeconds(t) {
-    if (!t || t === "--") return null;
-    const m = t.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
-    if (!m) return null;
-
-    let hh = parseInt(m[1], 10);
-    const mm = parseInt(m[2], 10);
-    const ss = parseInt(m[3], 10);
-    const ampm = m[4].toUpperCase();
-
-    if (ampm === "AM") {
-        if (hh === 12) hh = 0;
-    } else {
-        if (hh !== 12) hh += 12;
-    }
-
-    return hh * 3600 + mm * 60 + ss;
-}
-
-function computeHours(timeIn, timeOut) {
-    if (!timeIn || !timeOut || timeOut === "--") return "--";
-    const s1 = parseTimeToSeconds(timeIn);
-    const s2 = parseTimeToSeconds(timeOut);
-    if (s1 === null || s2 === null) return "--";
-
-    let diffSec = s2 - s1;
-    if (diffSec < 0) diffSec += 24 * 3600;
-
-    return (diffSec / 3600).toFixed(2);
-}
-
-/* ===============================
-   PAGE: attendance.html
-================================ */
-if (window.location.pathname.includes("attendance.html")) {
-
+    // DOM elements
     const dateInput = document.getElementById("attendanceDate");
     const searchInput = document.getElementById("search");
     const tableElement = document.getElementById("attendanceTable");
     const totalAttendance = document.getElementById("totalAttendance");
     const logAttendanceBtn = document.getElementById("logAttendanceBtn");
 
+    // Pagination
     let currentPage = 1;
     const rowsPerPage = 10;
     let filteredData = [];
 
+    // Set today's date as default
     const today = new Date().toISOString().split("T")[0];
     dateInput.value = today;
 
-    // Get logged in user info
-    const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
-    const userRole = loggedInUser.role || 'Employee';
-    const userId = loggedInUser.id || '';
+    // -------------------------
+    // Fetch Attendance Records
+    // -------------------------
+    async function fetchAttendance() {
+        try {
+            let { data, error } = await supabase
+                .from('attendance')
+                .select(`
+                    id,
+                    employee_id,
+                    date,
+                    hours_worked,
+                    status,
+                    created_at,
+                    updated_at,
+                    employees(first_name,last_name,department,position)
+                `)
+                .order('date', { ascending: false });
 
-    // Create sample data if empty
-    if (getRecords().length === 0) {
-        saveRecords([
-            {
-                id: "hr",
-                name: "HR Admin",
-                department: "Human Resources",
-                position: "HR Manager",
-                date: today,
-                timeIn: "08:00:00 AM",
-                timeOut: "05:00:00 PM"
-            },
-            {
-                id: "emp",
-                name: "John Doe",
-                department: "Sales",
-                position: "Sales Associate",
-                date: today,
-                timeIn: "08:15:00 AM",
-                timeOut: "--"
-            }
-        ]);
-    }
+            if (error) throw error;
 
-    /* ---------------------------
-       ROLE-BASED UI ADJUSTMENTS
-    --------------------------- */
-    function adjustUIForRole() {
-        if (userRole === "Employee") {
-            // Hide search box for employees (they only see their own data)
-            if (searchInput) {
-                searchInput.parentElement.style.display = "none";
-            }
-            
-            // Hide the "Log Attendance" button for employees (optional)
-            // Uncomment if you don't want employees to manually log attendance
-            // if (logAttendanceBtn) {
-            //     logAttendanceBtn.style.display = "none";
-            // }
-            
-            // Change the header text
-            const header = document.querySelector("header h1");
-            if (header) {
-                header.textContent = "My Attendance";
-            }
-            
-            const headerDesc = document.querySelector("header p");
-            if (headerDesc) {
-                headerDesc.textContent = "View your time and attendance records";
-            }
+            // Map records with employee info
+            return data.map(record => ({
+                ...record,
+                name: record.employees ? `${record.employees.first_name} ${record.employees.last_name}` : "N/A",
+                department: record.employees?.department || "",
+                position: record.employees?.position || "",
+                timeIn: record.status === "Present" ? "08:00:00 AM" : "--", // placeholder
+                timeOut: record.status === "LoggedOut" ? "05:00:00 PM" : "--" // placeholder
+            }));
+        } catch (e) {
+            console.error("Error fetching attendance:", e);
+            alert("Failed to load attendance records from database.");
+            return [];
         }
     }
 
-    /* ---------------------------
-       MAIN TABLE LOADING (UPDATED)
-    --------------------------- */
-    function loadTable() {
+    // -------------------------
+    // Compute total hours
+    // -------------------------
+    function parseTimeToSeconds(t) {
+        if (!t || t === "--") return null;
+        const m = t.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
+        if (!m) return null;
+        let hh = parseInt(m[1], 10);
+        const mm = parseInt(m[2], 10);
+        const ss = parseInt(m[3], 10);
+        const ampm = m[4].toUpperCase();
+        if (ampm === "AM" && hh === 12) hh = 0;
+        if (ampm === "PM" && hh !== 12) hh += 12;
+        return hh * 3600 + mm * 60 + ss;
+    }
+
+    function computeHours(timeIn, timeOut) {
+        if (!timeIn || !timeOut || timeOut === "--") return "--";
+        const s1 = parseTimeToSeconds(timeIn);
+        const s2 = parseTimeToSeconds(timeOut);
+        if (s1 === null || s2 === null) return "--";
+        let diffSec = s2 - s1;
+        if (diffSec < 0) diffSec += 24 * 3600;
+        return (diffSec / 3600).toFixed(2);
+    }
+
+    // -------------------------
+    // Load table with filters
+    // -------------------------
+    async function loadTable() {
         const selectedDate = dateInput.value;
         const searchValue = searchInput.value.toLowerCase();
 
-        let all = getRecords();
+        let allData = await fetchAttendance();
 
-        // 🔥 FILTER BY ROLE: Employees only see their own records
-        if (userRole === "Employee") {
-            all = all.filter(r => r.id === userId);
+        // Filter by date
+        filteredData = allData.filter(r => r.date === selectedDate);
+
+        // Filter by search
+        if (searchValue) {
+            filteredData = filteredData.filter(r =>
+                r.name.toLowerCase().includes(searchValue) ||
+                r.employee_id.toLowerCase().includes(searchValue)
+            );
         }
-
-        // Apply date and search filters
-        filteredData = all.filter(r =>
-            r.date === selectedDate &&
-            (
-                (r.name || "").toLowerCase().includes(searchValue) ||
-                (r.id || "").toLowerCase().includes(searchValue)
-            )
-        );
 
         updateTotalAttendance(filteredData.length);
         renderPaginatedTable();
     }
 
     function updateTotalAttendance(count) {
-        if (userRole === "Employee") {
-            totalAttendance.textContent = `My Records: ${count}`;
-        } else {
-            totalAttendance.textContent = `Total Attendance: ${count}`;
-        }
+        totalAttendance.textContent = userRole === "Employee"
+            ? `My Records: ${count}`
+            : `Total Attendance: ${count}`;
     }
 
-    /* ---------------------------
-       PAGINATION
-    --------------------------- */
-    function renderPaginatedTable() {
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-
-        renderTable(filteredData.slice(start, end));
-        renderPaginationControls();
-    }
-
-    /* ---------------------------
-       RENDER TABLE ROWS
-    --------------------------- */
+    // -------------------------
+    // Render table
+    // -------------------------
     function renderTable(list) {
         let html = "";
-
         if (list.length === 0) {
             html = `<tr><td colspan="8" style="text-align:center;">No records found</td></tr>`;
         } else {
             list.forEach(r => {
                 const totalHours = computeHours(r.timeIn, r.timeOut);
-
                 html += `
                     <tr>
-                        <td>${r.id}</td>
+                        <td>${r.employee_id}</td>
                         <td>${r.name}</td>
                         <td>${r.department}</td>
                         <td>${r.position}</td>
@@ -198,37 +136,31 @@ if (window.location.pathname.includes("attendance.html")) {
                         <td>${r.timeIn}</td>
                         <td>${r.timeOut}</td>
                         <td>
-                            ${
-                                r.timeOut === "--" ?
-                                `<button 
-                                    onclick="goLogout('${r.id}')"
-                                    style="
-                                        background:#e74c3c;
-                                        color:white;
-                                        padding:6px 10px;
-                                        border:none;
-                                        border-radius:4px;
-                                        cursor:pointer;
-                                        font-weight:bold;
-                                    "
-                                >Logout</button>` :
-                                `<span style="color:gray;font-size:12px;">${totalHours} hrs</span>`
-                            }
+                            ${r.timeOut === "--"
+                                ? `<button onclick="logTimeOut('${r.id}')"
+                                    style="background:#e74c3c;color:white;padding:6px 10px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
+                                    Logout</button>`
+                                : `<span style="color:gray;font-size:12px;">${totalHours} hrs</span>`}
                         </td>
                     </tr>
                 `;
             });
         }
-
         tableElement.innerHTML = html;
     }
 
-    /* ---------------------------
-       PAGINATION BUTTONS
-    --------------------------- */
+    // -------------------------
+    // Pagination
+    // -------------------------
+    function renderPaginatedTable() {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        renderTable(filteredData.slice(start, end));
+        renderPaginationControls();
+    }
+
     function renderPaginationControls() {
         let paginationDiv = document.getElementById("paginationControls");
-
         if (!paginationDiv) {
             paginationDiv = document.createElement("div");
             paginationDiv.id = "paginationControls";
@@ -238,80 +170,52 @@ if (window.location.pathname.includes("attendance.html")) {
             paginationDiv.style.gap = "10px";
             document.querySelector(".main").appendChild(paginationDiv);
         }
-
         const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
-
         paginationDiv.innerHTML = `
-            <button 
-                style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
-                ${currentPage === 1 ? "disabled" : ""}
-                onclick="prevPage()"
-            >Previous</button>
-
+            <button style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
+                ${currentPage === 1 ? "disabled" : ""} onclick="prevPage()">Previous</button>
             <span>Page ${currentPage} of ${totalPages}</span>
-
-            <button 
-                style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
-                ${currentPage === totalPages ? "disabled" : ""}
-                onclick="nextPage()"
-            >Next</button>
+            <button style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
+                ${currentPage === totalPages ? "disabled" : ""} onclick="nextPage()">Next</button>
         `;
-        attendanceList.appendChild(card);
     }
 
-    // 2. 🟢 Function to Fetch Data (JOINING employees table)
-    async function fetchAttendanceData() {
-        attendanceList.innerHTML = ''; 
+    window.prevPage = function() { if (currentPage > 1) { currentPage--; renderPaginatedTable(); } };
+    window.nextPage = function() { const totalPages = Math.ceil(filteredData.length / rowsPerPage); if (currentPage < totalPages) { currentPage++; renderPaginatedTable(); } };
 
-            const { data, error } = await supabase
-            .from('attendance')
-            .select('*, employees:employee_id(first_name, last_name)') // Cleaned up query string
-            .order('date', { ascending: false });
+    // -------------------------
+    // Log time out
+    // -------------------------
+    window.logTimeOut = async function(recordId) {
+        try {
+            const now = new Date().toISOString();
+            const { error } = await supabase
+                .from('attendance')
+                .update({ status: 'LoggedOut', updated_at: now })
+                .eq('id', recordId);
 
-    /* ---------------------------
-       LOGOUT BUTTON
-    --------------------------- */
-    window.goLogout = function(empId) {
-        const all = getRecords();
-        const record = all.find(r => r.id === empId && r.timeOut === "--");
+            if (error) throw error;
 
-        if (record) {
-            const now = new Date();
-            record.timeOut = now.toLocaleTimeString(
-                'en-US',
-                { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }
-            );
-
-            saveRecords(all);
-            loadTable();
             alert("Successfully logged out!");
+            loadTable();
+        } catch (e) {
+            console.error("Logout error:", e);
+            alert("Failed to log out.");
         }
     };
 
-    /* ---------------------------
-       LOG ATTENDANCE BUTTON
-    --------------------------- */
-    if (logAttendanceBtn) {
-        logAttendanceBtn.addEventListener("click", () => {
-            if (typeof showTimeTracker === 'function') {
-                showTimeTracker();
-            } else {
-                window.location.href = "in&out.html";
-            }
-        });
-    }
-
-    /* ---------------------------
-       EVENT LISTENERS
-    --------------------------- */
+    // -------------------------
+    // Event Listeners
+    // -------------------------
     dateInput.addEventListener("change", () => { currentPage = 1; loadTable(); });
     searchInput.addEventListener("input", () => { currentPage = 1; loadTable(); });
 
-    // Apply role-based UI changes
-    adjustUIForRole();
-    
+    if (logAttendanceBtn) {
+        logAttendanceBtn.addEventListener("click", () => {
+            window.location.href = "in&out.html";
+        });
+    }
+
     // Initial load
     loadTable();
-}
-}
 });

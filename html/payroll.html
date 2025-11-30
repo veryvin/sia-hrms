@@ -337,6 +337,11 @@
     });
   </script>
 
-  <script src="../js/payroll.js"></script>
+ <!-- Load Supabase FIRST -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+
+<!-- THEN load payroll.js -->
+<script src="../js/payroll.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// ==================== TIME TRACKER - SUPABASE READY ====================
+// ==================== TIME TRACKER - FIXED DATE HANDLING ====================
 
 // Safety check for Supabase
 if (!window.supabaseClient) {
@@ -7,6 +7,22 @@ if (!window.supabaseClient) {
 
 const supabase = window.supabaseClient;
 let currentEmployee = null;
+
+// ==================== IMPROVED DATE FUNCTIONS ====================
+
+// Get current date in YYYY-MM-DD format (LOCAL timezone)
+function getCurrentDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Get current timestamp in ISO format
+function getCurrentTimestamp() {
+    return new Date().toISOString();
+}
 
 // ==================== FETCH EMPLOYEE FROM SUPABASE ====================
 
@@ -48,37 +64,30 @@ async function getEmployeeById(empId) {
 
 // ==================== ATTENDANCE FUNCTIONS ====================
 
-async function getTodayRecord(empId) {
+async function getAllTodayRecords(empId) {
     if (!supabase) {
         console.error('Supabase not available');
-        return null;
+        return [];
     }
     
     try {
-        const today = new Date().toISOString().split('T')[0];
-        
-        console.log('Fetching today record for:', empId, 'Date:', today);
+        const today = getCurrentDate();
+        console.log('📅 Fetching records for date:', today);
         
         const { data, error } = await supabase
             .from('attendance')
             .select('*')
             .eq('employee_id', empId)
             .eq('date', today)
-            .order('time_in', { ascending: false })
-            .limit(1);
+            .order('time_in', { ascending: true });
 
-        if (error) {
-            console.error('Error in getTodayRecord:', error);
-            throw error;
-        }
+        if (error) throw error;
         
-        console.log('Today record result:', data);
-        
-        // Return the first record if it exists, or null
-        return data && data.length > 0 ? data[0] : null;
+        console.log('Found records:', data);
+        return data || [];
     } catch (error) {
-        console.error('Error fetching today record:', error);
-        return null;
+        console.error('Error fetching today records:', error);
+        return [];
     }
 }
 
@@ -89,7 +98,7 @@ async function getTodayActiveRecord(empId) {
     }
     
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getCurrentDate();
         
         const { data, error } = await supabase
             .from('attendance')
@@ -97,7 +106,9 @@ async function getTodayActiveRecord(empId) {
             .eq('employee_id', empId)
             .eq('date', today)
             .is('time_out', null)
-            .single();
+            .order('time_in', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
         
@@ -106,6 +117,25 @@ async function getTodayActiveRecord(empId) {
         console.error('Error fetching active record:', error);
         return null;
     }
+}
+
+// ==================== TIME CALCULATION ====================
+
+function calculateHoursBetween(timeIn, timeOut) {
+    if (!timeIn || !timeOut) return 0;
+    
+    const start = new Date(timeIn);
+    const end = new Date(timeOut);
+    const diffMs = end - start;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    
+    return Math.max(0, diffHours);
+}
+
+function formatHours(hours) {
+    const h = Math.floor(hours);
+    const m = Math.floor((hours - h) * 60);
+    return `${h}h ${m}m`;
 }
 
 // ==================== FORMATTING HELPERS ====================
@@ -166,8 +196,7 @@ async function showClockModal(empId) {
     document.getElementById('detailPosition').textContent = position;
     document.getElementById('detailDept').textContent = department;
 
-    const today = await getTodayRecord(employee.empId);
-    updateRecordsDisplay(today);
+    await refreshRecordsDisplay();
 
     document.getElementById('loginModal').classList.remove('show');
     document.getElementById('clockModal').classList.add('show');
@@ -194,20 +223,80 @@ function createInitialAvatar(firstName, lastName) {
 
 // ==================== UI UPDATES ====================
 
-function updateRecordsDisplay(today) {
-    const timeInDisplay = document.getElementById("timeInDisplay");
-    const timeOutDisplay = document.getElementById("timeOutDisplay");
+async function refreshRecordsDisplay() {
+    if (!currentEmployee) return;
+    
+    const records = await getAllTodayRecords(currentEmployee.empId);
+    const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
+    
+    updateRecordsDisplay(records, activeRecord);
+    updateClockButton(activeRecord);
+    updateDateDisplay();
+}
 
-    if (today && today.time_in) {
-        timeInDisplay.textContent = formatTimeFromISO(today.time_in);
-    } else {
-        timeInDisplay.textContent = "--:--:--";
+function updateDateDisplay() {
+    const dateElement = document.getElementById('currentDate');
+    const today = getCurrentDate();
+    
+    dateElement.textContent = formatDate();
+    console.log('📅 Current date:', today);
+}
+
+function updateRecordsDisplay(records, activeRecord) {
+    const recordsGrid = document.querySelector('.records-grid');
+    
+    if (!records || records.length === 0) {
+        recordsGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999;">
+                No time entries yet today
+            </div>
+        `;
+        return;
     }
+    
+    // Show single in/out record
+    const record = records[0];
+    const timeIn = formatTimeFromISO(record.time_in);
+    const timeOut = record.time_out ? formatTimeFromISO(record.time_out) : '--:--:--';
+    const isActive = record.time_out === null;
+    const hours = record.time_out ? calculateHoursBetween(record.time_in, record.time_out) : 0;
+    
+    let html = `
+        <div class="time-record in ${isActive ? 'active' : ''}">
+            <span class="record-label">TIME IN</span>
+            <span class="record-time">${timeIn}</span>
+        </div>
+        <div class="time-record out ${isActive ? 'active' : ''}">
+            <span class="record-label">TIME OUT</span>
+            <span class="record-time">${timeOut}</span>
+            ${record.time_out ? `<span class="record-duration">${formatHours(hours)}</span>` : '<span class="record-duration" style="color:#f39c12;">Active</span>'}
+        </div>
+    `;
+    
+    // Add total hours row if clocked out
+    if (record.time_out) {
+        html += `
+            <div class="time-record total" style="grid-column: 1 / -1; background: #e8f5e9; border: 2px solid #4caf50;">
+                <span class="record-label" style="font-weight: bold; font-size: 16px;">TOTAL HOURS TODAY</span>
+                <span class="record-time" style="font-weight: bold; font-size: 20px; color: #2e7d32;">${formatHours(hours)}</span>
+            </div>
+        `;
+    }
+    
+    recordsGrid.innerHTML = html;
+}
 
-    if (today && today.time_out) {
-        timeOutDisplay.textContent = formatTimeFromISO(today.time_out);
+function updateClockButton(activeRecord) {
+    const btn = document.getElementById('btnClockInOut');
+    
+    if (activeRecord) {
+        // Currently clocked in
+        btn.innerHTML = '<span class="icon">🔴</span> CLOCK OUT';
+        btn.style.background = '#e74c3c';
     } else {
-        timeOutDisplay.textContent = "--:--:--";
+        // Not clocked in
+        btn.innerHTML = '<span class="icon">🟢</span> CLOCK IN';
+        btn.style.background = '#27ae60';
     }
 }
 
@@ -232,27 +321,31 @@ async function handleTimeIn() {
         return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
+    const today = getCurrentDate();
+    const now = getCurrentTimestamp();
+
+    console.log('🟢 CLOCK IN ATTEMPT');
+    console.log('Employee:', currentEmployee.empId);
+    console.log('Date:', today);
+    console.log('Timestamp:', now);
 
     try {
-        // Check if already logged in today with active session
-        const existing = await getTodayActiveRecord(currentEmployee.empId);
+        // Check if ANY attendance record exists for today
+        const allTodayRecords = await getAllTodayRecords(currentEmployee.empId);
         
-        if (existing) {
-            showAlert('Already clocked in today!', 'warning');
+        if (allTodayRecords && allTodayRecords.length > 0) {
+            showAlert('⚠️ You already have attendance record(s) for today! Cannot clock in again.', 'warning');
             return;
         }
 
-        console.log('Inserting time in for:', currentEmployee.empId);
-
-        // Insert new attendance record
+        // Insert new attendance record (only ONE per day allowed)
         const { data, error } = await supabase
             .from('attendance')
             .insert({
                 employee_id: currentEmployee.empId,
+                employee_uuid: currentEmployee.id,
                 date: today,
-                time_in: now.toISOString(),
+                time_in: now,
                 time_out: null
             })
             .select()
@@ -260,13 +353,13 @@ async function handleTimeIn() {
 
         if (error) throw error;
 
-        console.log('Time in recorded:', data);
+        console.log('✅ Time in recorded:', data);
 
-        showAlert('✓ Clocked In Successfully!', 'success');
-        updateRecordsDisplay(data);
+        showAlert('✅ Clocked In Successfully!', 'success');
+        await refreshRecordsDisplay();
     } catch (error) {
-        console.error('Error clocking in:', error);
-        showAlert('Error recording time in: ' + error.message, 'error');
+        console.error('❌ Error clocking in:', error);
+        showAlert('❌ Error recording time in: ' + error.message, 'error');
     }
 }
 
@@ -281,35 +374,38 @@ async function handleTimeOut() {
         return;
     }
 
-    try {
-        const todayRecord = await getTodayActiveRecord(currentEmployee.empId);
+    const now = getCurrentTimestamp();
+    
+    console.log('🔴 CLOCK OUT ATTEMPT');
+    console.log('Employee:', currentEmployee.empId);
+    console.log('Timestamp:', now);
 
-        if (!todayRecord) {
-            showAlert('You need to clock in first!', 'error');
+    try {
+        const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
+
+        if (!activeRecord) {
+            showAlert('⚠️ No active session! Clock in first.', 'warning');
             return;
         }
 
-        console.log('Clocking out record:', todayRecord);
-
-        const now = new Date();
-
-        // Update time_out
+        // Update time_out for the active record
         const { data, error } = await supabase
             .from('attendance')
-            .update({ time_out: now.toISOString() })
-            .eq('id', todayRecord.id)
+            .update({ time_out: now })
+            .eq('id', activeRecord.id)
             .select()
             .single();
 
         if (error) throw error;
 
-        console.log('Time out recorded:', data);
+        const duration = calculateHoursBetween(activeRecord.time_in, now);
+        console.log('✅ Time out recorded:', data);
 
-        showAlert('✓ Clocked Out Successfully!', 'success');
-        updateRecordsDisplay(data);
+        showAlert(`✅ Clocked Out! Session: ${formatHours(duration)}`, 'success');
+        await refreshRecordsDisplay();
     } catch (error) {
-        console.error('Error clocking out:', error);
-        showAlert('Error recording time out: ' + error.message, 'error');
+        console.error('❌ Error clocking out:', error);
+        showAlert('❌ Error recording time out: ' + error.message, 'error');
     }
 }
 
@@ -331,6 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Supabase client not available on page load');
         return;
     }
+
+    console.log('✅ Time In/Out System Initialized');
+    console.log('📅 Current Date:', getCurrentDate());
 
     document.getElementById('currentDate').textContent = formatDate();
 
@@ -376,14 +475,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
         
         if (!activeRecord) {
-            // No active record, so clock in
+            // No active session, so clock in
             await handleTimeIn();
         } else {
-            // Active record exists, so clock out
+            // Active session exists, so clock out
             await handleTimeOut();
         }
     });
 
     startClock();
     showLoginModal();
+    
+    // Auto-refresh records every 30 seconds if logged in
+    setInterval(async () => {
+        if (currentEmployee && document.getElementById('clockModal').classList.contains('show')) {
+            await refreshRecordsDisplay();
+        }
+    }, 30000);
 });

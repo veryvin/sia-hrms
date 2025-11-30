@@ -25,30 +25,16 @@
       reader.readAsDataURL(file);
     });
   }
-  function createDownloadLinkFromBase64(base64, filename) {
-    const parts = base64.split(',');
-    const mime = parts[0].match(/:(.*?);/)[1];
-    const bstr = atob(parts[1]);
-    let n = bstr.length;
-    const u8 = new Uint8Array(n);
-    while (n--) u8[n] = bstr.charCodeAt(n);
-    const blob = new Blob([u8], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.textContent = filename;
-    return a;
-  }
 
   /* ---------- Supabase Functions ---------- */
   async function fetchEmployees() {
     try {
+      // ✅ FIXED: Specify the foreign key relationship explicitly
       const { data, error } = await supabase
         .from('employees')
         .select(`
           *,
-          positions(
+          positions!employees_position_id_fkey(
             position_name,
             departments(department_name),
             roles(role_name)
@@ -57,6 +43,8 @@
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      console.log('✅ Employees fetched successfully:', data);
 
       return (data || []).map(emp => ({
         id: emp.id,
@@ -83,6 +71,7 @@
     }
   }
 
+  // ... (rest of employee.js continues in next message)
   async function insertEmployee(empData) {
     try {
       console.log('Inserting employee with data:', empData);
@@ -472,11 +461,12 @@
 
   async function fetchEmployeeById(id) {
     try {
+      // ✅ FIXED: Specify the foreign key relationship explicitly
       const { data, error } = await supabase
         .from('employees')
         .select(`
           *,
-          positions(
+          positions!employees_position_id_fkey(
             position_name,
             departments(department_name),
             roles(role_name)

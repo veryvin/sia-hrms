@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ===== ANIMATED SIDEBAR CSS ===== */
 .sidebar {
   width: 70px;
@@ -360,6 +361,9 @@
 }
 
 /* ===== ORIGINAL PAYROLL CSS ===== */
+=======
+/* Reset */
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 * {
   margin: 0;
   padding: 0;
@@ -377,18 +381,68 @@ body {
   min-height: 100vh;
 }
 
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: #fff;
+  height: 100vh;
+  border-right: 1px solid #e5e5e5;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .logo {
+  color: #16a34a;
+  font-size: 1.4rem;
+  margin-bottom: 5px;
+}
+
+.sidebar .subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.sidebar #welcomeText {
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #374151;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+}
+
+.nav-item.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* ===== MAIN CONTENT ===== */
 .main {
   flex: 1;
   padding: 40px 50px;
   overflow-y: auto;
-  margin-left: 70px;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar.expanded ~ .main {
-  margin-left: 280px;
-}
-
+/* Header */
 main header h1 {
   font-size: 20px;
   font-weight: 700;
@@ -401,6 +455,7 @@ main header p {
   margin-bottom: 25px;
 }
 
+/* Controls Section */
 .controls {
   display: flex;
   justify-content: space-between;
@@ -465,6 +520,7 @@ main header p {
   background: #16a34a;
 }
 
+/* ===== TABLE ===== */
 .payroll-table table {
   width: 100%;
   border-collapse: collapse;
@@ -493,7 +549,7 @@ tbody tr:hover {
 td.empty {
   text-align: center;
   color: #6b7280;
-  padding: 25px;
+  padding: 25 px;
 }
 
 .action-buttons {
@@ -529,6 +585,54 @@ td.empty {
   background: #fecaca;
 }
 
+/* ===== USER MENU ===== */
+.user-menu {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 50px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 160px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.dropdown-menu p {
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #16a34a;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  background-color: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background-color: #15803d;
+}
+
+/* ===== MODALS ===== */
 .modal {
   display: none;
   position: fixed;
@@ -552,8 +656,6 @@ td.empty {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   position: relative;
   margin: 20px auto;
-  max-height: 90vh;
-  overflow-y: auto;
 }
 
 .details-modal {
@@ -612,6 +714,7 @@ td.empty {
   flex: 1;
 }
 
+/* Fieldsets */
 fieldset {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -719,21 +822,7 @@ legend {
   background: #16a34a;
 }
 
-.btn-print {
-  background: #2d6e4e;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.2s;
-}
-
-.btn-print:hover {
-  background: #1f4a34;
-}
-
+/* Details Modal Content */
 #detailsContent {
   background: #f9fafb;
   padding: 15px;
@@ -760,59 +849,7 @@ legend {
 .detail-value {
   color: #111827;
 }
-
-.receipt-header {
-  text-align: center;
-  margin-bottom: 20px;
-  border-bottom: 3px solid #2d6e4e;
-  padding-bottom: 15px;
-}
-
-.receipt-logo-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.receipt-logo {
-  width: 35px;
-  height: 35px;
-  object-fit: contain;
-  object-position: center;
-}
-
-.receipt-company-name {
-  color: #2d6e4e;
-  font-size: 20px;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.receipt-company-type {
-  color: #2d6e4e;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  margin-top: 5px;
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-    width: 280px;
-  }
-
-  .sidebar.expanded {
-    transform: translateX(0);
-  }
-
-  .hamburger-btn {
-    right: -50px;
-  }
-
-  .main {
-    margin-left: 0 !important;
-  }
+.modal-content {
+    max-height: 90vh;     /* don't exceed screen height */
+    overflow-y: auto;     /* scroll inside modal */
 }

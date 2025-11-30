@@ -1,39 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-<script>
-    // --- Define Constants and Current Page ---
-    const hrOnlyPages = [
-        "dashboard.html", "employee.html", "employee_add.html", 
-        "employee_edit.html", "employee_view.html", "payroll.html", "reports.html"
-    ];
-
-    const currentPage = window.location.pathname.split("/").pop();
-    const loggedInUserString = localStorage.getItem('loggedInUser');
-
-    // --- Protection Check 1: Is the user logged in at all? ---
-    if (!loggedInUserString) {
-        window.location.href = "index.html";
-    } else {
-        // --- Protection Check 2: Role-Based Access Control (RBAC) ---
-        const loggedInUser = JSON.parse(loggedInUserString);
-        const userRole = loggedInUser.role;
-
-        if (userRole === "Employee" && hrOnlyPages.includes(currentPage)) {
-            window.location.href = "attendance.html";
-        }
-    }
-</script>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RMT HRMS Dashboard</title>
     <link rel="stylesheet" href="../css/dashboard.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
-        <!-- Animated Sidebar -->
         <aside class="sidebar">
-            <!-- Logo and Company Header -->
             <div class="sidebar-header">
                 <div class="logo-box">
                     <img src="../images/rmt2.png" alt="RMT Logo" class="sidebar-logo">
@@ -62,11 +38,10 @@
                 <a href="reports.html" class="nav-item" id="navReports">📊 Reports</a>
             </nav>
 
-            <!-- User Menu -->
             <div class="user-menu-sidebar">
                 <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
                 <div class="dropdown-menu" id="dropdownMenu">
-                    <p id="userEmailDisplay"></p>
+                    <p id="userEmailDisplay">Loading...</p>
                     <button id="logoutBtn" class="btn btn-secondary">Logout</button>
                 </div>
             </div>
@@ -143,13 +118,13 @@
                         <span class="view-all">View Details →</span>
                     </div>
                     <div id="departmentDistribution">
-                        <!-- Will be populated by JS -->
-                    </div>
+                        </div>
                 </div>
             </section>
         </main>
     </div>
 
+<<<<<<< HEAD
     <!-- Animated Sidebar Script -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -256,5 +231,8 @@
     </script>
     
     <script src="../js/dashboard.js"></script>
+=======
+    <script type="module" src="../js/dashboard.js"></script>
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 </body>
 </html>

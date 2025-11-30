@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ===== ANIMATED SIDEBAR CSS ===== */
 .sidebar {
   width: 70px;
@@ -358,15 +359,14 @@
 }
 
 /* ===== ORIGINAL LEAVE CSS ===== */
+=======
+/* Base Layout (same as dashboard) */
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: "Inter", sans-serif;
-}
-
-body {
-  background-color: #f9fafb;
 }
 
 .container {
@@ -375,38 +375,84 @@ body {
   background-color: #f9fafb;
 }
 
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: #fff;
+  height: 100vh;
+  border-right: 1px solid #e5e5e5;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  color: #16a34a;
+  font-size: 1.4rem;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+#welcomeText {
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #374151;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+}
+
+.nav-item.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* Main */
 .main {
   flex: 1;
-  margin-left: 70px;
   padding: 30px;
-  overflow-y: auto;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar.expanded ~ .main {
-  margin-left: 280px;
-}
-
+/* Header */
 .leave-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 25px;
 }
 
 .leave-header h1 {
   font-size: 1.5rem;
   color: #111827;
-  margin-bottom: 5px;
 }
 
 .leave-header p {
   color: #6b7280;
-  font-size: 0.9rem;
+  flex: 1;
+  margin-left: 15px;
 }
 
 .btn-new-leave {
-  background: #2d6e4e;
+  background: #16a34a;
   color: white;
   border: none;
   border-radius: 8px;
@@ -414,42 +460,37 @@ body {
   font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .btn-new-leave:hover {
-  background: #1f4a34;
+  background: #15803d;
 }
 
+/* Tabs */
 .tabs {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
-  border-bottom: 2px solid #e5e7eb;
 }
 
 .tab {
-  background: none;
-  border: none;
-  padding: 10px 15px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 14px;
   cursor: pointer;
   font-size: 0.9rem;
   color: #374151;
-  border-bottom: 3px solid transparent;
-  transition: all 0.2s;
-  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
 }
 
 .tab.active {
-  color: #2d6e4e;
-  border-bottom: 3px solid #2d6e4e;
+  background: #16a34a;
+  color: white;
+  border-color: #16a34a;
 }
 
-.tab:hover {
-  color: #2d6e4e;
-}
-
+/* Leave List */
 .leave-list {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -464,6 +505,7 @@ body {
   color: #9ca3af;
 }
 
+<<<<<<< HEAD
 /* Table styles for Leave Balances and Manager tables */
 .table-responsive {
   width: 100%;
@@ -509,6 +551,162 @@ body {
   background: #1f4a34;
 }
 
+=======
+/* User Menu */
+.user-menu {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 50px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  min-width: 150px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dropdown-menu p {
+  margin: 0 0 10px 0;
+  font-weight: 500;
+  color: #16a34a;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  background-color: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background-color: #15803d;
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-bottom: 1px solid #e5e7eb;
+  }
+}
+/* ===== Modal Styles ===== */
+.modal {
+  display: none; 
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.3);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 100px auto;
+  padding: 25px 30px;
+  border: 1px solid #e5e7eb;
+  width: 400px;
+  border-radius: 12px;
+  position: relative;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+.modal-content h3 {
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.close-btn:hover {
+  color: #111827;
+}
+
+.modal-content label {
+  display: block;
+  font-size: 0.85rem;
+  color: #374151;
+  margin-bottom: 4px;
+  margin-top: 12px;
+}
+
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.date-row {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.btn-submit {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  background: #15803d;
+}
+/* ===== Leave List Cards ===== */
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 .leave-card {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -555,24 +753,13 @@ body {
   color: #991b1b;
 }
 
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.3);
-  justify-content: center;
-  align-items: center;
-}
-
-.modal.show {
+.actions {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
+<<<<<<< HEAD
 .modal-content {
   background-color: #fff;
   padding: 25px 30px;
@@ -656,36 +843,35 @@ body {
   color: #374151;
   border: none;
   padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-
-.btn-cancel:hover {
-  background: #e5e7eb;
-}
-
-.btn-submit {
-  background: #2d6e4e;
-  color: #fff;
+=======
+.btn-approve,
+.btn-reject {
   border: none;
-  padding: 8px 14px;
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
   border-radius: 6px;
+  padding: 6px 10px;
   cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s;
+  font-size: 0.8rem;
 }
 
-.btn-submit:hover {
-  background: #1f4a34;
+.btn-approve {
+  background: #16a34a;
+  color: white;
 }
 
-@media (max-width: 1024px) {
-  .main {
-    margin-left: 70px;
-  }
+.btn-approve:hover {
+  background: #15803d;
 }
+
+.btn-reject {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-reject:hover {
+  background: #b91c1c;
+}
+<<<<<<< HEAD
 
 @media (max-width: 768px) {
   .sidebar {
@@ -715,3 +901,5 @@ body {
     width: 100%;
   }
 }
+=======
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a

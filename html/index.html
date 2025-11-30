@@ -5,37 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RMT HRMS - Login</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
 </head>
 <body>
     <div class="container">
         <div class="login-card">
-
             <div class="logo-icon">
-                <img src="../images/rmt.png" class="logo-img">
+                <img src="../images/rmt.png" alt="RMT Logo" class="logo-img">
             </div>
 
             <h1 class="title">RMT HRMS</h1>
+            <p class="subtitle">Human Resources Management System</p>
 
-            <form id="loginForm"> 
+            <form class="login-form" id="loginForm">
                 <div class="form-group">
-                    <label for="employeeId">Employee ID</label>
-                    <input type="text" id="employeeId" required placeholder="Try: hr or emp">
+                    <label for="employeeId">Employee ID (Must be Email)</label>
+                    <input type="text" id="employeeId" required placeholder="Try: hr@example.com">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" required placeholder="Try: hr or emp">
+                    <input type="password" id="password" required placeholder="Enter password">
+                </div>
+
+                <div class="form-options">
+                    <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot Password?</a>
                 </div>
 
                 <div id="errorMessage" class="error-message" style="display:none;"></div>
 
                 <button type="submit" id="loginBtn" class="btn btn-primary">Log In</button>
-                <button type="button" id="createBtn" class="btn btn-secondary">Create an Account</button>
+                <button type="button" id="createBtn" class="btn btn-secondary" onclick="window.location.href='createaccount.html';">Create an Account</button>
             </form>
 
         </div>
     </div>
 
-    <script src="../js/index.js"></script>
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Reset Password</h2>
+            <p class="modal-description">Enter your email address and we'll send you a link to reset your password.</p>
+            <form id="forgotPasswordForm">
+                <div class="form-group">
+                    <label for="resetEmail">Email Address</label>
+                    <input type="email" id="resetEmail" name="resetEmail" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Reset Link</button>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="/js/index.js"></script>
+    
 </body>
 </html>

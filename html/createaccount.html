@@ -1,43 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Account - RMT HRMS</title>
-  <link rel="stylesheet" href="../css/createaccount.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - RMT HRMS</title>
+    <link rel="stylesheet" href="../css/createaccount.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
-  <div class="container">
-    <div class="form-card">
+    <div class="container">
+        <div class="form-card">
+            
+            <div class="logo-icon">
+                <img src="../images/rmt.png" alt="RMT Logo" class="logo-img">
+            </div>
 
-      <!-- Logo Icon -->
-      <div class="logo-icon">
-        <img src="../images/rmt.png" alt="RMT Logo" class="logo-img">
-      </div>
+            <h1 class="title">Create Account</h1>
+            <p class="subtitle">Join RMT HRMS</p>
 
-      <!-- Title -->
-      <h1 class="title">Create Account</h1>
-      <p class="subtitle">Join RMT HRMS</p>
+            <div id="successMessage" class="success-message" style="display:none;"></div>
 
-      <!-- Inline Messages -->
-      <div id="successMessage" class="success-message"></div>
-      <div id="errorMessage" class="error-message"></div>
+            <div id="errorMessage" class="error-message" style="display:none;"></div>
 
-      <!-- Create Account Form -->
-      <form id="createAccountForm" class="account-form">
+            <form id="createAccountForm" class="account-form">
+                <div class="row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" required placeholder="First Name">
+                    </div>
 
-        <div class="row">
-          <div class="form-group">
-            <label for="firstName">First Name</label>
-            <input type="text" id="firstName" placeholder="First Name" required>
-          </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" required placeholder="Last Name">
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="lastName">Last Name</label>
-            <input type="text" id="lastName" placeholder="Last Name" required>
-          </div>
+                <div class="form-group">
+                    <label for="roleId">Select Role (Temporary for Signup)</label>
+                    <select id="roleId" name="roleId" required>
+                        <option value="" disabled selected>Select your Role</option>
+                        <option value="3"> Manager</option>
+                        <option value="2"> Employee </option>
+                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="employeeId">Employee ID</label>
+                    <input type="text" id="employeeId" required placeholder="e.g., RMT-001 (Ask HR)">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" required placeholder="Enter your email">
+                </div>
+
+                <div class="form-group password-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="At least 6 Characters">
+                    <img src="../images/hide.png" class="toggle-password" data-target="password" alt="Toggle Password Visibility">
+                </div>
+
+                <div class="form-group password-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required placeholder="Confirm Password">
+                    <img src="../images/hide.png" class="toggle-password" data-target="confirmPassword" alt="Toggle Password Visibility">
+                </div>
+
+                <button type="submit" class="btn-primary">Create Account</button>
+                
+                <p style="text-align: center; margin-top: 15px;">
+                    Already have an account? <a href="index.html" style="color: #8e44ad; text-decoration: none;">Login here</a>
+                </p>
+            </form>
         </div>
+<<<<<<< HEAD
 
         <div class="form-group">
           <label for="employeeId">Employee ID</label>
@@ -80,18 +116,23 @@
           <a href="index.html" style="color: #8e44ad; text-decoration: none;">Login here</a>
         </p>
       </form>
+=======
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
     </div>
-  </div>
 
-  <!-- 🎉 Success Popup Modal -->
-  <div id="successModal" class="modal">
-    <div class="modal-content">
-      <img src="../images/rmt.png" alt="RMT Logo">
-      <h2>Account Successfully Created</h2>
-      <p id="modalMessage">You will be redirected to the login page...</p>
-    </div>
-  </div>
-
-  <script src="../js/createaccount.js"></script>
+    <script src="../js/createaccount.js"></script>
+    <script>
+        // Optional: Password toggle logic here if not in createaccount.js
+        document.querySelectorAll('.toggle-password').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const targetInput = document.getElementById(targetId);
+                const isPassword = targetInput.getAttribute('type') === 'password';
+                
+                targetInput.setAttribute('type', isPassword ? 'text' : 'password');
+                this.setAttribute('src', isPassword ? '../images/show.png' : '../images/hide.png');
+            });
+        });
+    </script>
 </body>
 </html>

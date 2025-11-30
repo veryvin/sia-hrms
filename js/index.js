@@ -1,82 +1,91 @@
-document.addEventListener("DOMContentLoaded", () => {
+// In /js/index.js
 
-    // Sample default accounts for testing
-    const sampleUsers = [
-        { 
-            id: "hr", 
-            role: "Admin", 
-            password: "hr",
-            email: "hr@rmt.com",
-            firstName: "HR",
-            lastName: "Admin",
-            department: "Human Resources",
-            position: "HR Manager"
-        },
-        { 
-            id: "emp", 
-            role: "Employee", 
-            password: "emp",
-            email: "employee@rmt.com",
-            firstName: "John",
-            lastName: "Doe",
-            department: "Sales",
-            position: "Sales Associate"
-        },
-    ];
+// 1. SUPABASE CLIENT INITIALIZATION
+// ====================================================================
+// USE THESE CREDENTIALS
+const SUPABASE_URL = 'https://pheupnmnisguenfqaphs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZXVwbm1uaXNndWVuZnFhcGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzY2ODcsImV4cCI6MjA3OTgxMjY4N30.CYN8o3ilyeRY1aYLy7Vut47pLskF6gIcBv4zE3kOUqM';
 
+<<<<<<< HEAD
     // HR/Manager Access PIN (6 digits)
     const ADMIN_PIN = "123456"; // Change this to your desired PIN
 
     const loginForm = document.getElementById("loginForm");
     const createBtn = document.getElementById("createBtn");
     const errorMessage = document.getElementById("errorMessage");
+=======
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ====================================================================
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 
-    if (!loginForm) {
-        console.error("⚠ loginForm not found — Check index.html ID");
-        return;
+// 2. DOM Elements and Utility Functions (Re-declare if they exist in this file)
+const loginForm = document.getElementById('loginForm');
+const errorMessage = document.getElementById('errorMessage');
+
+function showErrorMessage(message) {
+    if (errorMessage) {
+        errorMessage.textContent = "❌ " + message;
+        errorMessage.style.display = "block";
     }
+}
 
-    // LOGIN HANDLER
-    loginForm.addEventListener("submit", (e) => {
-        e.preventDefault();
+// 3. LOGIN SUBMISSION HANDLER
+if (loginForm) {
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
 
-        const empId = document.getElementById("employeeId").value.trim();
-        const pwd = document.getElementById("password").value.trim();
-
-        // Find user in sample list
-        const user = sampleUsers.find(u => u.id === empId);
-
-        if (!user || user.password !== pwd) {
-            errorMessage.textContent = "❌ Invalid Employee ID or Password.";
-            errorMessage.style.display = "block";
-            return;
+        const email = document.getElementById('employeeId')?.value.trim(); // The input is labeled "Employee ID (Must be Email)"
+        const password = document.getElementById('password')?.value || '';
+        const loginBtn = document.getElementById('loginBtn');
+        
+        // Basic validation
+        if (!email || !password) {
+            return showErrorMessage('Please enter both email and password.');
         }
 
-        // Store login session with complete user data
-        localStorage.setItem("loggedInUser", JSON.stringify(user));
-        localStorage.setItem("userEmail", user.email);
+        loginBtn.textContent = 'Logging in...';
+        loginBtn.disabled = true;
 
-        // Redirect based on role
-        if (user.role === "Admin") {
-            window.location.href = "dashboard.html";
+        // --- SUPABASE LOGIN ---
+        const { error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            showErrorMessage(`Login failed: ${error.message}`);
+            console.error('Login Error:', error);
+            loginBtn.textContent = 'Log In';
+            loginBtn.disabled = false;
         } else {
-            window.location.href = "attendance.html";
+            // --- SUCCESS: REDIRECT TO DASHBOARD ---
+            // Assuming your main protected page is called 'dashboard.html'
+            window.location.href = 'dashboard.html'; 
         }
     });
+}
 
+<<<<<<< HEAD
     // CREATE ACCOUNT BUTTON - Shows PIN Modal
     if (createBtn) {
         createBtn.addEventListener("click", () => {
             showPinModal();
         });
     }
+=======
+// 4. FORGOT PASSWORD LOGIC (Modal interaction)
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+const closeButton = forgotPasswordModal?.querySelector('.close');
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 
-    // Clear error on input
-    document.querySelectorAll("input").forEach(input => {
-        input.addEventListener("input", () => {
-            errorMessage.style.display = "none";
-        });
+if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        forgotPasswordModal.style.display = 'block';
     });
+<<<<<<< HEAD
 
     // PIN MODAL FUNCTIONS
     function showPinModal() {
@@ -235,3 +244,34 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+=======
+}
+if (closeButton) {
+    closeButton.addEventListener('click', () => {
+        forgotPasswordModal.style.display = 'none';
+    });
+}
+window.onclick = function(event) {
+    if (event.target == forgotPasswordModal) {
+        forgotPasswordModal.style.display = 'none';
+    }
+}
+
+if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const resetEmail = document.getElementById('resetEmail').value.trim();
+        
+        const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+            redirectTo: 'http://yourdomain.com/updatepassword.html', // IMPORTANT: Replace with your actual live URL path
+        });
+
+        if (error) {
+            alert('Error sending reset link: ' + error.message);
+        } else {
+            alert('Password reset link sent to your email.');
+            forgotPasswordModal.style.display = 'none';
+        }
+    });
+}
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a

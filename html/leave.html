@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<<<<<<< HEAD
   <script>
     const hrOnlyPages = [
         "dashboard.html", "employee.html", "employee_add.html",
@@ -26,30 +27,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Leave Balances - RMT HRMS</title>
   <link rel="stylesheet" href="../css/leave.css" />
+=======
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leave Management - RMT HRMS</title>
+  <link rel="stylesheet" href="/css/leave.css" />
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 </head>
 <body>
   <div class="container">
-    <!-- Animated Sidebar -->
+    <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-box">
-          <img src="../images/rmt2.png" alt="RMT Logo" class="sidebar-logo">
-          <div class="company-info">
-            <h2 class="logo">RMT MARKETING</h2>
-            <p class="company-subtitle">Human Resource Management</p>
-          </div>
-        </div>
-        <div class="company-details">
-          <p class="detail-item">SmartStock Medical Supply Trading</p>
-          <p class="detail-item">1234 MedTech Avenue, Quezon City, Philippines</p>
-          <p class="detail-item">📞 (02) 8888-1234 | ✉️ smartstock.ph@gmail.com</p>
-          <p class="detail-item">VAT Reg. TIN: 123-456-789-000</p>
-          <p class="detail-item">NON-VAT Registered</p>
-        </div>
-      </div>
-
+      <h2 class="logo">RMT HRMS</h2>
+      <p class="subtitle">Human Resource Management</p>
       <p id="welcomeText" style="font-weight:500; color:#16a34a;"></p>
 
+<<<<<<< HEAD
       <nav class="nav" id="sidebarNav">
         <a href="dashboard.html" class="nav-item" id="navDashboard">🏠 Dashboard</a>
         <a href="employee.html" class="nav-item" id="navEmployees">👥 Employees</a>
@@ -58,25 +52,32 @@
         <a href="leaverequest.html" class="nav-item" id="navLeaveRequest">📄 Leave Request</a>
         <a href="payroll.html" class="nav-item" id="navPayroll">💲 Payroll</a>
         <a href="reports.html" class="nav-item" id="navReports">📊 Reports</a>
+=======
+      <nav class="nav">
+        <a href="dashboard.html" class="nav-item">🏠 Dashboard</a>
+        <a href="employee.html" class="nav-item">👥 Employees</a>
+        <a href="attendance.html" class="nav-item">🕒 Attendance</a>
+        <a href="leave.html" class="nav-item active">📄 Leave Management</a>
+        <a href="payroll.html" class="nav-item">💲 Payroll</a>
+        <a href="reports.html" class="nav-item">📊 Reports</a>
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
       </nav>
-
-      <div class="user-menu-sidebar">
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
-        <div class="dropdown-menu" id="dropdownMenu">
-          <p id="userEmailDisplay"></p>
-          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
-        </div>
-      </div>
     </aside>
 
     <!-- Main Content -->
     <main class="main">
       <header class="leave-header">
+<<<<<<< HEAD
         <div>
           <h1>Leave Balances</h1>
           <p>View employee leave balances and submit leave requests</p>
         </div>
         <!-- Removed header + New Leave Request button per request -->
+=======
+        <h1>Leave Tracking</h1>
+        <p>Manage employee leave requests</p>
+        <button id="newLeaveBtn" class="btn-new-leave">+ New Leave Request</button>
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
       </header>
 
       <div class="tabs">
@@ -92,6 +93,7 @@
     </main>
   </div>
 
+<<<<<<< HEAD
   <!-- Leave Request Modal -->
   <div id="leaveModal" class="modal">
     <div class="modal-content">
@@ -149,9 +151,23 @@
           <button type="submit" class="btn-submit">Submit Request</button>
         </div>
       </form>
+=======
+  <!-- User Menu -->
+  <div class="user-menu">
+    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User Icon" class="user-icon" id="userIcon">
+    <div class="dropdown-menu" id="dropdownMenu">
+      <p id="userEmailDisplay"></p>
+      <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
     </div>
   </div>
+<!-- Leave Request Modal -->
+<div id="leaveModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" id="closeModal">&times;</span>
+    <h3>New Leave Request</h3>
 
+<<<<<<< HEAD
   <script>
     // Welcome text and unified logout handling
     const userEmail = localStorage.getItem('userEmail') || "";
@@ -169,17 +185,30 @@
         hamburger.innerHTML = '<span></span><span></span><span></span>';
         sidebar.appendChild(hamburger);
       }
+=======
+    <form id="leaveForm">
+      <label for="employee">Employee</label>
+      <input type="text" id="employee" placeholder="Enter employee name" required>
 
-      const hamburger = document.querySelector(".hamburger-btn");
-      let isExpanded = false;
-      let hoverTimeout;
+      <label for="leaveType">Leave Type</label>
+      <input type="text" id="leaveType" placeholder="Enter leave type" required>
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 
-      hamburger.addEventListener("click", (e) => {
-        e.stopPropagation();
-        isExpanded = !isExpanded;
-        sidebar.classList.toggle("expanded", isExpanded);
-      });
+      <div class="date-row">
+        <div>
+          <label for="startDate">Start Date</label>
+          <input type="date" id="startDate" required>
+        </div>
+        <div>
+          <label for="endDate">End Date</label>
+          <input type="date" id="endDate" required>
+        </div>
+      </div>
 
+      <label for="reason">Reason</label>
+      <textarea id="reason" rows="3" placeholder="Enter reason"></textarea>
+
+<<<<<<< HEAD
       sidebar.addEventListener("mouseenter", () => {
         clearTimeout(hoverTimeout);
         sidebar.classList.add("expanded");
@@ -236,7 +265,22 @@
       }
     });
   </script>
+=======
+      <div class="modal-actions">
+        <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+        <button type="submit" class="btn-submit">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 
   <script src="../js/leave.js"></script>
+  <script>
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    }
+  </script>
+  
 </body>
 </html>

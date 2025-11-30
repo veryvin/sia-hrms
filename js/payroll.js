@@ -138,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsModal = document.getElementById("detailsModal");
   const closeDetailsModal = document.getElementById("closeDetailsModal");
   const closeDetailsBtn = document.getElementById("closeDetailsBtn");
+<<<<<<< HEAD
   const printReceiptBtn = document.getElementById("printReceiptBtn");
 
   // Hide the "+ Process Payroll" button
@@ -145,11 +146,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (processBtn) {
     processBtn.style.display = "none";
   }
+=======
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
 
   let payrollRecords = JSON.parse(localStorage.getItem("payrollRecords")) || [];
   let selectedPeriod = getCurrentPeriod();
 
   // ===================================================
+<<<<<<< HEAD
   // GET CURRENT PERIOD (Current Month)
   // ===================================================
   function getCurrentPeriod() {
@@ -161,6 +165,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastDayStr = `${year}-${month}-${String(lastDay.getDate()).padStart(2, '0')}`;
     
     return { start: firstDay, end: lastDayStr };
+=======
+  // REAL-TIME SUMMARY
+  // ===================================================
+  const inputFields = [
+    "basicSalary",
+    "overtimeHours",
+    "holidayPay",
+    "nightDifferential",
+    "taxableAllowances"
+  ];
+
+  inputFields.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.addEventListener("input", updatePayrollSummary);
+  });
+
+  function updatePayrollSummary() {
+    const basicSalary = parseFloat(document.getElementById("basicSalary").value) || 0;
+    const overtimeHours = parseFloat(document.getElementById("overtimeHours").value) || 0;
+    const holidayPay = parseFloat(document.getElementById("holidayPay").value) || 0;
+    const nightDiff = parseFloat(document.getElementById("nightDifferential").value) || 0;
+    const allowances = parseFloat(document.getElementById("taxableAllowances").value) || 0;
+
+    const otPay = PayrollCalculator.calculateOTPay(basicSalary, overtimeHours);
+    const grossPay = PayrollCalculator.calculateGrossPay(basicSalary, otPay, holidayPay, nightDiff, allowances);
+
+    const sss = PayrollCalculator.calculateSSS(basicSalary);
+    const philHealth = PayrollCalculator.calculatePhilHealth(basicSalary);
+    const pagibig = PayrollCalculator.calculatePagIBIG(basicSalary);
+    const wtax = PayrollCalculator.calculateWithholdingTax(grossPay * 12);
+
+    const totalDeductions = sss + philHealth + pagibig + wtax;
+    const netPay = grossPay - totalDeductions;
+
+    // UI update
+    document.getElementById("grossPayDisplay").textContent = "₱" + grossPay.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+    document.getElementById("sssDisplay").textContent = "₱" + sss.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+    document.getElementById("philhealthDisplay").textContent = "₱" + philHealth.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+    document.getElementById("pagibigDisplay").textContent = "₱" + pagibig.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+    document.getElementById("withholdingtaxDisplay").textContent = "₱" + wtax.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+    document.getElementById("totalDeductionsDisplay").textContent = "₱" + totalDeductions.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+    document.getElementById("netPayDisplay").textContent = "₱" + netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
   }
 
   // ===================================================
@@ -376,7 +423,41 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===================================================
+<<<<<<< HEAD
   // DELETE PAYROLL
+=======
+  // RENDER TABLE
+  // ===================================================
+  function renderPayroll() {
+    if (payrollRecords.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="10" class="empty">No payroll records found</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = payrollRecords.map(p => `
+      <tr>
+        <td>${p.employeeNo}</td>
+        <td>${p.employee}</td>
+        <td>${p.employeePosition}</td>
+        <td>${p.employeeStatus}</td>
+        <td>${p.period}</td>
+        <td>₱${p.grossPay.toLocaleString("en-PH",{ minimumFractionDigits:2 })}</td>
+        <td>₱${p.totalDeductions.toLocaleString("en-PH",{ minimumFractionDigits:2 })}</td>
+        <td>₱${p.netPay.toLocaleString("en-PH",{ minimumFractionDigits:2 })}</td>
+        <td>
+          <span class="status-badge">${p.status}</span>
+          <div class="action-buttons">
+            <button class="view-btn" onclick="showPayrollDetails(${p.id})">👁 View</button>
+            <button class="delete-btn" onclick="deletePayroll(${p.id})">🗑 Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  // ===================================================
+  // DELETE RECORD
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
   // ===================================================
   window.deletePayroll = function(id) {
     if (!confirm("Are you sure you want to delete this payroll record?")) return;
@@ -426,6 +507,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ===================================================
+<<<<<<< HEAD
   // MODAL CONTROLS
   // ===================================================
   closeDetailsModal?.addEventListener("click", () => detailsModal.style.display = "none");
@@ -438,6 +520,8 @@ document.addEventListener("DOMContentLoaded", () => {
   printReceiptBtn?.addEventListener("click", () => window.print());
 
   // ===================================================
+=======
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a
   // SUMMARY CARDS
   // ===================================================
   function updateSummaryCards() {
@@ -466,6 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+<<<<<<< HEAD
   // ===================================================
   // PERIOD FILTER (Optional Enhancement)
   // ===================================================
@@ -484,3 +569,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===================================================
   renderEmployeeTable();
 });
+=======
+  renderPayroll();
+  updateSummaryCards();
+});
+>>>>>>> 8b8df163618e8317ad8cd8d5a93505f44b92961a

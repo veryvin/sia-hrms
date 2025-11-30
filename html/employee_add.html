@@ -25,11 +25,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add Employee</title>
   <link rel="stylesheet" href="../css/employee.css" />
-    
 </head>
 <body>
   <div class="container">
-    <!-- Animated Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo-box">
@@ -74,24 +72,24 @@
         <button class="back-btn" onclick="window.location.href='employee.html'">← Back to List</button>
       </header>
 
-      <form id="employeeForm">
-        <div class="form-container">
+      <div class="form-container">
+        <form id="employeeForm">
           
-          <!-- Documents Section -->
+          <!-- Documents & Photo Section -->
           <div class="form-section">
             <div class="form-section-title">📄 Documents & Photo</div>
             <div class="form-grid">
               <div class="form-group">
+                <label>Employee Photo</label>
                 <div class="file-upload-container">
-                  <span class="file-upload-label">Employee Photo</span>
                   <input type="file" id="empPhoto" accept="image/*">
                   <div class="file-upload-hint">📸 Upload 2x2 ID Photo (JPG, PNG)</div>
                 </div>
               </div>
 
               <div class="form-group" style="grid-column: span 2;">
+                <label>Resume / CV / Certificates</label>
                 <div class="file-upload-container">
-                  <span class="file-upload-label">Resume / CV / Certificates</span>
                   <input type="file" id="empFiles" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple>
                   <div class="file-upload-hint">📎 Upload supporting documents (PDF, Word, Images)</div>
                 </div>
@@ -99,7 +97,7 @@
             </div>
           </div>
 
-          <!-- Personal Information -->
+          <!-- Personal Information Section -->
           <div class="form-section">
             <div class="form-section-title">👤 Personal Information</div>
             <div class="form-grid">
@@ -121,8 +119,8 @@
                 <input type="text" id="firstName" placeholder="First Name" required>
               </div>
               <div class="form-group">
-                <label>Middle Name <span class="required">*</span></label>
-                <input type="text" id="middleName" placeholder="Middle Name" required>
+                <label>Middle Name</label>
+                <input type="text" id="middleName" placeholder="Middle Name">
               </div>
               <div class="form-group">
                 <label>Last Name <span class="required">*</span></label>
@@ -151,7 +149,7 @@
             </div>
           </div>
 
-          <!-- Employment Details -->
+          <!-- Employment Details Section -->
           <div class="form-section">
             <div class="form-section-title">💼 Employment Details</div>
             <div class="form-grid">
@@ -190,8 +188,8 @@
             <button type="button" id="cancelAdd" class="cancel-btn">Cancel</button>
             <button type="submit" id="saveAdd" class="save-btn">💾 Save Employee</button>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -277,6 +275,9 @@
     });
   </script>
 
+  <!-- FIXED: Added Supabase library and config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
   <script src="../js/employee.js" defer></script>
 </body>
 </html>

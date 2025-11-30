@@ -1,7 +1,15 @@
 // ==================== EMPLOYEE.JS - SUPABASE READY (FIXED) ====================
 
 (function(){
+  // Check if Supabase client is available
+  if (!window.supabaseClient) {
+    console.error('CRITICAL: Supabase client not found! Make sure supabase-config.js is loaded before employee.js');
+    alert('Database connection error. Please refresh the page.');
+    return;
+  }
+  
   const supabase = window.supabaseClient;
+  console.log('Employee.js loaded with Supabase client:', supabase);
 
   /* ---------- Utilities ---------- */
   function qs(id) { return document.getElementById(id); }
@@ -16,6 +24,21 @@
       reader.onerror = err => rej(err);
       reader.readAsDataURL(file);
     });
+  }
+  function createDownloadLinkFromBase64(base64, filename) {
+    const parts = base64.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8 = new Uint8Array(n);
+    while (n--) u8[n] = bstr.charCodeAt(n);
+    const blob = new Blob([u8], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.textContent = filename;
+    return a;
   }
 
   /* ---------- Supabase Functions ---------- */
@@ -40,17 +63,17 @@
         empId: emp.employee_id,
         firstName: emp.first_name,
         lastName: emp.last_name,
-        middleName: emp.middle_name,
+        middleName: emp.middle_name || '',
         email: emp.email,
         department: emp.positions?.departments?.department_name || '',
         position: emp.positions?.position_name || '',
-        status: emp.employment_status,
+        status: emp.employment_status || 'Regular',
         salary: emp.salary,
         dob: emp.date_of_birth,
         gender: emp.gender,
         phone: emp.phone,
         address: emp.address,
-        dateHired: emp.date_hired,
+        dateHired: emp.date_hired || emp.hire_date,
         photo: emp.photo_url,
         files: emp.files || []
       }));
@@ -62,6 +85,17 @@
 
   async function insertEmployee(empData) {
     try {
+      console.log('Inserting employee with data:', empData);
+      
+      // Validate that empData and required fields exist
+      if (!empData) {
+        throw new Error('Employee data is undefined');
+      }
+      
+      if (!empData.department) {
+        throw new Error('Department is required');
+      }
+
       // First, get or verify department exists
       const { data: dept, error: deptError } = await supabase
         .from('departments')
@@ -69,47 +103,92 @@
         .eq('department_name', empData.department)
         .maybeSingle();
 
-      if (deptError) throw deptError;
+      if (deptError) {
+        console.error('Department query error:', deptError);
+        throw deptError;
+      }
 
       if (!dept) {
         alert(`Department "${empData.department}" not found. Please create it first.`);
         return false;
       }
 
-      // Insert employee
+      // Find or create position
+      let position;
+      const { data: existingPos, error: posQueryError } = await supabase
+        .from('positions')
+        .select('id')
+        .eq('position_name', empData.position)
+        .eq('department_id', dept.id)
+        .maybeSingle();
+
+      if (posQueryError) {
+        console.error('Position query error:', posQueryError);
+        throw posQueryError;
+      }
+
+      if (existingPos) {
+        position = existingPos;
+      } else {
+        // Get default role
+        const { data: defaultRole, error: roleError } = await supabase
+          .from('roles')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+
+        if (roleError || !defaultRole) {
+          alert('Please create at least one role in the roles table first.');
+          return false;
+        }
+
+        const { data: newPos, error: posCreateError } = await supabase
+          .from('positions')
+          .insert({
+            position_name: empData.position,
+            department_id: dept.id,
+            description: empData.position,
+            role_id: defaultRole.id
+          })
+          .select()
+          .single();
+
+        if (posCreateError) {
+          console.error('Position create error:', posCreateError);
+          throw posCreateError;
+        }
+        position = newPos;
+      }
+
+      // Insert employee with position_id
       const { data: employee, error: empError } = await supabase
         .from('employees')
         .insert({
           employee_id: empData.empId,
           first_name: empData.firstName,
           last_name: empData.lastName,
-          middle_name: empData.middleName,
+          middle_name: empData.middleName || '',
           email: empData.email,
           date_of_birth: empData.dob,
           gender: empData.gender,
           phone: empData.phone,
+          contact_no: empData.phone,
           address: empData.address,
           date_hired: empData.dateHired,
+          hire_date: empData.dateHired,
           employment_status: empData.status,
-          salary: empData.salary,
+          salary: parseFloat(empData.salary),
           photo_url: empData.photo,
-          files: empData.files
+          files: empData.files || [],
+          position_id: position.id
         })
         .select()
         .single();
 
-      if (empError) throw empError;
-
-      // Insert position record
-      const { error: posError } = await supabase
-        .from('positions')
-        .insert({
-          employee_id: employee.id,
-          position_name: empData.position,
-          department_id: dept.id
-        });
-
-      if (posError) throw posError;
+      if (empError) {
+        console.error('Employee insert error:', empError);
+        throw empError;
+      }
 
       alert('Employee added successfully!');
       return true;
@@ -122,7 +201,7 @@
       } else if (error.code === '23503') {
         alert('Error: Invalid department or position reference.');
       } else {
-        alert('Error adding employee: ' + error.message);
+        alert('Error adding employee: ' + (error.message || 'Unknown error'));
       }
       
       return false;
@@ -281,7 +360,9 @@
     const form = qs('employeeForm');
     const cancelBtn = qs('cancelAdd');
     
-    form && form.addEventListener('submit', async (e) => {
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       // Validate required fields
@@ -292,6 +373,7 @@
         const field = qs(fieldId);
         if (!field || !field.value.trim()) {
           alert(`Please fill in the ${fieldId} field`);
+          field && field.focus();
           isValid = false;
           break;
         }
@@ -302,34 +384,40 @@
       const photoInput = qs('empPhoto');
       const filesInput = qs('empFiles');
 
-      const photoBase64 = photoInput && photoInput.files.length ? await toBase64(photoInput.files[0]) : null;
+      let photoBase64 = null;
+      if (photoInput && photoInput.files && photoInput.files.length) {
+        photoBase64 = await toBase64(photoInput.files[0]);
+      }
 
       const filesArr = [];
-      if (filesInput && filesInput.files.length) {
+      if (filesInput && filesInput.files && filesInput.files.length) {
         for (let f of filesInput.files) {
           const base = await toBase64(f);
           filesArr.push({ name: f.name, data: base });
         }
       }
 
+      // Build employee object
       const emp = {
-        empId: qs('empId').value,
-        email: qs('empEmail').value,
-        firstName: qs('firstName').value,
-        lastName: qs('lastName').value,
-        middleName: qs('middleName').value || '',
+        empId: qs('empId').value.trim(),
+        email: qs('empEmail').value.trim(),
+        firstName: qs('firstName').value.trim(),
+        lastName: qs('lastName').value.trim(),
+        middleName: qs('middleName') ? qs('middleName').value.trim() : '',
         dob: qs('dob').value,
         gender: qs('gender').value,
-        phone: qs('phone').value,
-        address: qs('address').value,
-        position: qs('position').value,
-        department: qs('department').value,
+        phone: qs('phone').value.trim(),
+        address: qs('address').value.trim(),
+        position: qs('position').value.trim(),
+        department: qs('department').value.trim(),
         dateHired: qs('dateHired').value,
         status: qs('status').value,
         salary: qs('salary').value,
         photo: photoBase64,
         files: filesArr
       };
+
+      console.log('Submitting employee data:', emp);
 
       const success = await insertEmployee(emp);
       if (success) {
@@ -345,6 +433,12 @@
 // ==================== EMPLOYEE.JS PART 2 - EDIT & VIEW ====================
 
 (function(){
+  // Check if Supabase client is available
+  if (!window.supabaseClient) {
+    console.error('CRITICAL: Supabase client not found in Part 2!');
+    return;
+  }
+  
   const supabase = window.supabaseClient;
 
   function qs(id) { return document.getElementById(id); }
@@ -398,17 +492,17 @@
         empId: data.employee_id,
         firstName: data.first_name,
         lastName: data.last_name,
-        middleName: data.middle_name,
+        middleName: data.middle_name || '',
         email: data.email,
         department: data.positions?.departments?.department_name || '',
         position: data.positions?.position_name || '',
-        status: data.employment_status,
+        status: data.employment_status || 'Regular',
         salary: data.salary,
         dob: data.date_of_birth,
         gender: data.gender,
         phone: data.phone,
         address: data.address,
-        dateHired: data.date_hired,
+        dateHired: data.date_hired || data.hire_date,
         photo: data.photo_url,
         files: data.files || []
       };
@@ -434,6 +528,34 @@
         return false;
       }
 
+      // Find or create position
+      let position;
+      const { data: existingPos, error: posQueryError } = await supabase
+        .from('positions')
+        .select('id')
+        .eq('position_name', empData.position)
+        .eq('department_id', dept.id)
+        .maybeSingle();
+
+      if (posQueryError) throw posQueryError;
+
+      if (existingPos) {
+        position = existingPos;
+      } else {
+        const { data: newPos, error: posCreateError } = await supabase
+          .from('positions')
+          .insert({
+            position_name: empData.position,
+            department_id: dept.id,
+            description: empData.position
+          })
+          .select()
+          .single();
+
+        if (posCreateError) throw posCreateError;
+        position = newPos;
+      }
+
       // Update employee
       const { error: empError } = await supabase
         .from('employees')
@@ -446,27 +568,19 @@
           date_of_birth: empData.dob,
           gender: empData.gender,
           phone: empData.phone,
+          contact_no: empData.phone,
           address: empData.address,
           date_hired: empData.dateHired,
+          hire_date: empData.dateHired,
           employment_status: empData.status,
           salary: empData.salary,
           photo_url: empData.photo,
-          files: empData.files
+          files: empData.files,
+          position_id: position.id
         })
         .eq('id', id);
 
       if (empError) throw empError;
-
-      // Update position
-      const { error: posError } = await supabase
-        .from('positions')
-        .update({
-          position_name: empData.position,
-          department_id: dept.id
-        })
-        .eq('employee_id', id);
-
-      if (posError) throw posError;
 
       alert('Employee updated successfully!');
       return true;
@@ -541,12 +655,12 @@
         const filesInput = qs('empFiles');
 
         let photoBase64 = emp.photo;
-        if (photoInput && photoInput.files.length) {
+        if (photoInput && photoInput.files && photoInput.files.length) {
           photoBase64 = await toBase64(photoInput.files[0]);
         }
 
         const filesArr = Array.isArray(emp.files) ? emp.files.slice() : [];
-        if (filesInput && filesInput.files.length) {
+        if (filesInput && filesInput.files && filesInput.files.length) {
           for (let f of filesInput.files) {
             const base = await toBase64(f);
             filesArr.push({ name: f.name, data: base });
@@ -554,17 +668,17 @@
         }
 
         const updated = {
-          empId: qs('empId').value,
-          email: qs('empEmail').value,
-          firstName: qs('firstName').value,
-          lastName: qs('lastName').value,
-          middleName: qs('middleName').value || '',
+          empId: qs('empId').value.trim(),
+          email: qs('empEmail').value.trim(),
+          firstName: qs('firstName').value.trim(),
+          lastName: qs('lastName').value.trim(),
+          middleName: qs('middleName').value.trim() || '',
           dob: qs('dob').value,
           gender: qs('gender').value,
-          phone: qs('phone').value,
-          address: qs('address').value,
-          position: qs('position').value,
-          department: qs('department').value,
+          phone: qs('phone').value.trim(),
+          address: qs('address').value.trim(),
+          position: qs('position').value.trim(),
+          department: qs('department').value.trim(),
           dateHired: qs('dateHired').value,
           status: qs('status').value,
           salary: qs('salary').value,

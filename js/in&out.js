@@ -1,11 +1,21 @@
 // ==================== TIME TRACKER - SUPABASE READY ====================
 
+// Safety check for Supabase
+if (!window.supabaseClient) {
+    console.error('Supabase client not initialized! Check script loading order.');
+}
+
 const supabase = window.supabaseClient;
 let currentEmployee = null;
 
 // ==================== FETCH EMPLOYEE FROM SUPABASE ====================
 
 async function getEmployeeById(empId) {
+    if (!supabase) {
+        console.error('Supabase not available');
+        return null;
+    }
+    
     try {
         const { data, error } = await supabase
             .from('employees')
@@ -39,11 +49,50 @@ async function getEmployeeById(empId) {
 // ==================== ATTENDANCE FUNCTIONS ====================
 
 async function getTodayRecord(empId) {
+    if (!supabase) {
+        console.error('Supabase not available');
+        return null;
+    }
+    
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        console.log('Fetching today record for:', empId, 'Date:', today);
+        
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('employee_id', empId)
+            .eq('date', today)
+            .order('time_in', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            console.error('Error in getTodayRecord:', error);
+            throw error;
+        }
+        
+        console.log('Today record result:', data);
+        
+        // Return the first record if it exists, or null
+        return data && data.length > 0 ? data[0] : null;
+    } catch (error) {
+        console.error('Error fetching today record:', error);
+        return null;
+    }
+}
+
+async function getTodayActiveRecord(empId) {
+    if (!supabase) {
+        console.error('Supabase not available');
+        return null;
+    }
+    
     try {
         const today = new Date().toISOString().split('T')[0];
         
         const { data, error } = await supabase
-            .from('attendance_records')
+            .from('attendance')
             .select('*')
             .eq('employee_id', empId)
             .eq('date', today)
@@ -54,7 +103,7 @@ async function getTodayRecord(empId) {
         
         return data || null;
     } catch (error) {
-        console.error('Error fetching today record:', error);
+        console.error('Error fetching active record:', error);
         return null;
     }
 }
@@ -178,33 +227,43 @@ async function handleTimeIn() {
         return;
     }
 
+    if (!supabase) {
+        showAlert('Database connection error', 'error');
+        return;
+    }
+
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
 
     try {
-        // Check if already logged in today
-        const existing = await getTodayRecord(currentEmployee.empId);
+        // Check if already logged in today with active session
+        const existing = await getTodayActiveRecord(currentEmployee.empId);
         
         if (existing) {
             showAlert('Already clocked in today!', 'warning');
             return;
         }
 
+        console.log('Inserting time in for:', currentEmployee.empId);
+
         // Insert new attendance record
-        const { error } = await supabase
-            .from('attendance_records')
+        const { data, error } = await supabase
+            .from('attendance')
             .insert({
                 employee_id: currentEmployee.empId,
                 date: today,
                 time_in: now.toISOString(),
                 time_out: null
-            });
+            })
+            .select()
+            .single();
 
         if (error) throw error;
 
+        console.log('Time in recorded:', data);
+
         showAlert('✓ Clocked In Successfully!', 'success');
-        const todayRecord = await getTodayRecord(currentEmployee.empId);
-        updateRecordsDisplay(todayRecord);
+        updateRecordsDisplay(data);
     } catch (error) {
         console.error('Error clocking in:', error);
         showAlert('Error recording time in: ' + error.message, 'error');
@@ -217,26 +276,37 @@ async function handleTimeOut() {
         return;
     }
 
+    if (!supabase) {
+        showAlert('Database connection error', 'error');
+        return;
+    }
+
     try {
-        const todayRecord = await getTodayRecord(currentEmployee.empId);
+        const todayRecord = await getTodayActiveRecord(currentEmployee.empId);
 
         if (!todayRecord) {
             showAlert('You need to clock in first!', 'error');
             return;
         }
 
+        console.log('Clocking out record:', todayRecord);
+
         const now = new Date();
 
         // Update time_out
-        const { error } = await supabase
-            .from('attendance_records')
+        const { data, error } = await supabase
+            .from('attendance')
             .update({ time_out: now.toISOString() })
-            .eq('id', todayRecord.id);
+            .eq('id', todayRecord.id)
+            .select()
+            .single();
 
         if (error) throw error;
 
+        console.log('Time out recorded:', data);
+
         showAlert('✓ Clocked Out Successfully!', 'success');
-        updateRecordsDisplay(null);
+        updateRecordsDisplay(data);
     } catch (error) {
         console.error('Error clocking out:', error);
         showAlert('Error recording time out: ' + error.message, 'error');
@@ -255,6 +325,13 @@ function startClock() {
 // ==================== INITIALIZATION ====================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if Supabase is ready
+    if (!supabase) {
+        alert('Database connection failed. Please refresh the page or check your internet connection.');
+        console.error('Supabase client not available on page load');
+        return;
+    }
+
     document.getElementById('currentDate').textContent = formatDate();
 
     const inputEmpId = document.getElementById("inputEmpId");
@@ -295,11 +372,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClockInOut.addEventListener('click', async () => {
         if (!currentEmployee) return;
         
-        const today = await getTodayRecord(currentEmployee.empId);
+        // Check if there's an active record (no time_out)
+        const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
         
-        if (!today) {
+        if (!activeRecord) {
+            // No active record, so clock in
             await handleTimeIn();
         } else {
+            // Active record exists, so clock out
             await handleTimeOut();
         }
     });

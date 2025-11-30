@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RMT HRMS - Login</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
@@ -19,13 +18,13 @@
 
             <form id="loginForm"> 
                 <div class="form-group">
-                    <label for="employeeId">Employee ID</label>
-                    <input type="text" id="employeeId" required placeholder="Try: hr or emp">
+                    <label for="employeeId">Email</label>
+                    <input type="email" id="employeeId" required placeholder="Enter your email">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" required placeholder="Try: hr or emp">
+                    <input type="password" id="password" required placeholder="Enter your password">
                 </div>
 
                 <div id="errorMessage" class="error-message" style="display:none;"></div>
@@ -37,6 +36,12 @@
         </div>
     </div>
 
+    <!-- SCRIPTS AT THE BOTTOM -->
+    <!-- 1. Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 2. Your login script (has Supabase init built-in) -->
     <script src="../js/index.js"></script>
+    
 </body>
 </html>

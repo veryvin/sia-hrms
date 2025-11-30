@@ -4,6 +4,13 @@
 
 if (window.location.pathname.includes("attendance.html")) {
     const supabase = window.supabaseClient;
+    
+    // Check if Supabase is loaded
+    if (!supabase) {
+        console.error('Supabase client not initialized!');
+        alert('Database connection error. Please refresh the page.');
+        throw new Error('Supabase not initialized');
+    }
 
     const dateInput = document.getElementById("attendanceDate");
     const searchInput = document.getElementById("search");
@@ -21,7 +28,7 @@ if (window.location.pathname.includes("attendance.html")) {
     // Get logged in user info
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
     const userRole = loggedInUser.role || 'Employee';
-    const userId = loggedInUser.id || '';
+    const userId = loggedInUser.employee_id || '';
 
     /* ---------------------------
        FETCH FROM SUPABASE
@@ -29,35 +36,56 @@ if (window.location.pathname.includes("attendance.html")) {
     async function fetchAttendanceRecords() {
         try {
             const { data, error } = await supabase
-                .from('attendance_records')
+                .from('attendance')
                 .select(`
-                    *,
-                    employees!inner(
+                    id,
+                    employee_id,
+                    date,
+                    time_in,
+                    time_out,
+                    employees (
                         employee_id,
                         first_name,
                         last_name,
-                        positions(
+                        positions (
                             position_name,
-                            departments(department_name)
+                            departments (
+                                department_name
+                            )
                         )
                     )
                 `)
-                .order('date', { ascending: false });
+                .order('date', { ascending: false })
+                .order('time_in', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error:', error);
+                throw error;
+            }
+
+            console.log('Fetched attendance data:', data);
 
             // Transform to match current structure
-            return (data || []).map(record => ({
-                id: record.employee_id,
-                name: `${record.employees.first_name} ${record.employees.last_name}`,
-                department: record.employees.positions?.departments?.department_name || '-',
-                position: record.employees.positions?.position_name || '-',
-                date: record.date,
-                timeIn: formatTime(record.time_in),
-                timeOut: record.time_out ? formatTime(record.time_out) : '--'
-            }));
+            return (data || []).map(record => {
+                // Handle the case where employees might be null or an array
+                const employee = Array.isArray(record.employees) ? record.employees[0] : record.employees;
+                
+                return {
+                    recordId: record.id,
+                    id: record.employee_id,
+                    name: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
+                    department: employee?.positions?.departments?.department_name || '-',
+                    position: employee?.positions?.position_name || '-',
+                    date: record.date,
+                    timeIn: formatTime(record.time_in),
+                    timeOut: record.time_out ? formatTime(record.time_out) : '--',
+                    timeInRaw: record.time_in,
+                    timeOutRaw: record.time_out
+                };
+            });
         } catch (error) {
             console.error('Error fetching attendance:', error);
+            showAlert('Error loading attendance records: ' + error.message, 'error');
             return [];
         }
     }
@@ -71,6 +99,30 @@ if (window.location.pathname.includes("attendance.html")) {
             second: '2-digit',
             hour12: true
         });
+    }
+
+    function showAlert(message, type = 'success') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${type}`;
+        alertDiv.textContent = message;
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: ${type === 'error' ? '#e74c3c' : '#27ae60'};
+            color: white;
+            border-radius: 5px;
+            z-index: 9999;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            alertDiv.style.transition = 'opacity 0.3s';
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 3000);
     }
 
     /* ---------------------------
@@ -112,7 +164,7 @@ if (window.location.pathname.includes("attendance.html")) {
     --------------------------- */
     function adjustUIForRole() {
         if (userRole === "Employee") {
-            if (searchInput) {
+            if (searchInput && searchInput.parentElement) {
                 searchInput.parentElement.style.display = "none";
             }
             
@@ -133,29 +185,39 @@ if (window.location.pathname.includes("attendance.html")) {
     --------------------------- */
     async function loadTable() {
         const selectedDate = dateInput.value;
-        const searchValue = searchInput.value.toLowerCase();
+        const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
+
+        console.log('Loading table for date:', selectedDate);
 
         let all = await fetchAttendanceRecords();
+        
+        console.log('All records:', all);
+        console.log('User role:', userRole, 'User ID:', userId);
 
         // Filter by role: Employees only see their own records
-        if (userRole === "Employee") {
+        if (userRole === "Employee" && userId) {
             all = all.filter(r => r.id === userId);
+            console.log('Filtered for employee:', all);
         }
 
         // Apply date and search filters
-        filteredData = all.filter(r =>
-            r.date === selectedDate &&
-            (
+        filteredData = all.filter(r => {
+            const matchesDate = r.date === selectedDate;
+            const matchesSearch = searchValue === '' || 
                 (r.name || "").toLowerCase().includes(searchValue) ||
-                (r.id || "").toLowerCase().includes(searchValue)
-            )
-        );
+                (r.id || "").toLowerCase().includes(searchValue);
+            return matchesDate && matchesSearch;
+        });
+
+        console.log('Filtered data:', filteredData);
 
         updateTotalAttendance(filteredData.length);
         renderPaginatedTable();
     }
 
     function updateTotalAttendance(count) {
+        if (!totalAttendance) return;
+        
         if (userRole === "Employee") {
             totalAttendance.textContent = `My Records: ${count}`;
         } else {
@@ -178,10 +240,12 @@ if (window.location.pathname.includes("attendance.html")) {
        RENDER TABLE ROWS
     --------------------------- */
     function renderTable(list) {
+        if (!tableElement) return;
+        
         let html = "";
 
         if (list.length === 0) {
-            html = `<tr><td colspan="8" style="text-align:center;">No records found</td></tr>`;
+            html = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #999;">No records found for this date</td></tr>`;
         } else {
             list.forEach(r => {
                 const totalHours = computeHours(r.timeIn, r.timeOut);
@@ -196,6 +260,12 @@ if (window.location.pathname.includes("attendance.html")) {
                         <td>${r.timeIn}</td>
                         <td>${r.timeOut}</td>
                         <td>
+                            ${totalHours === "--" 
+                                ? '<span style="color:#999;">--</span>' 
+                                : `<span style="color:#27ae60;font-weight:bold;">${totalHours} hrs</span>`
+                            }
+                        </td>
+                        <td>
                             ${
                                 r.timeOut === "--" ?
                                 `<button 
@@ -203,14 +273,15 @@ if (window.location.pathname.includes("attendance.html")) {
                                     style="
                                         background:#e74c3c;
                                         color:white;
-                                        padding:6px 10px;
+                                        padding:6px 12px;
                                         border:none;
                                         border-radius:4px;
                                         cursor:pointer;
                                         font-weight:bold;
+                                        font-size: 12px;
                                     "
-                                >Logout</button>` :
-                                `<span style="color:gray;font-size:12px;">${totalHours} hrs</span>`
+                                >Clock Out</button>` :
+                                `<span style="color:#27ae60;font-size:12px;">✓ Completed</span>`
                             }
                         </td>
                     </tr>
@@ -230,29 +301,53 @@ if (window.location.pathname.includes("attendance.html")) {
         if (!paginationDiv) {
             paginationDiv = document.createElement("div");
             paginationDiv.id = "paginationControls";
-            paginationDiv.style.marginTop = "10px";
-            paginationDiv.style.display = "flex";
-            paginationDiv.style.justifyContent = "center";
-            paginationDiv.style.gap = "10px";
-            document.querySelector(".main").appendChild(paginationDiv);
+            paginationDiv.style.cssText = `
+                margin-top: 20px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 15px;
+            `;
+            const mainSection = document.querySelector(".main");
+            if (mainSection) {
+                mainSection.appendChild(paginationDiv);
+            }
         }
 
         const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
 
         paginationDiv.innerHTML = `
             <button 
-                style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
+                style="
+                    background: #8e44ad;
+                    color: white;
+                    padding: 8px 16px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    ${currentPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''}
+                "
                 ${currentPage === 1 ? "disabled" : ""}
                 onclick="prevPage()"
-            >Previous</button>
+            >← Previous</button>
 
-            <span>Page ${currentPage} of ${totalPages}</span>
+            <span style="font-weight: bold; color: #333;">Page ${currentPage} of ${totalPages}</span>
 
             <button 
-                style="background:#8e44ad;color:white;padding:6px 12px;border:none;border-radius:3px;"
+                style="
+                    background: #8e44ad;
+                    color: white;
+                    padding: 8px 16px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    ${currentPage === totalPages ? 'opacity: 0.5; cursor: not-allowed;' : ''}
+                "
                 ${currentPage === totalPages ? "disabled" : ""}
                 onclick="nextPage()"
-            >Next</button>
+            >Next →</button>
         `;
     }
 
@@ -272,14 +367,18 @@ if (window.location.pathname.includes("attendance.html")) {
     };
 
     /* ---------------------------
-       LOGOUT BUTTON
+       LOGOUT BUTTON (CLOCK OUT)
     --------------------------- */
     window.goLogout = async function(empId) {
+        if (!confirm(`Clock out employee ${empId}?`)) {
+            return;
+        }
+
         try {
             const today = new Date().toISOString().split("T")[0];
             
             const { error } = await supabase
-                .from('attendance_records')
+                .from('attendance')
                 .update({ time_out: new Date().toISOString() })
                 .eq('employee_id', empId)
                 .eq('date', today)
@@ -287,11 +386,11 @@ if (window.location.pathname.includes("attendance.html")) {
 
             if (error) throw error;
 
+            showAlert('Successfully clocked out!', 'success');
             await loadTable();
-            alert("Successfully logged out!");
         } catch (error) {
-            console.error('Error logging out:', error);
-            alert('Error logging out: ' + error.message);
+            console.error('Error clocking out:', error);
+            showAlert('Error clocking out: ' + error.message, 'error');
         }
     };
 
@@ -300,37 +399,55 @@ if (window.location.pathname.includes("attendance.html")) {
     --------------------------- */
     if (logAttendanceBtn) {
         logAttendanceBtn.addEventListener("click", () => {
-            if (typeof showTimeTracker === 'function') {
-                showTimeTracker();
-            } else {
-                window.location.href = "in&out.html";
-            }
+            window.location.href = "in&out.html";
         });
     }
 
     /* ---------------------------
        EVENT LISTENERS
     --------------------------- */
-    dateInput.addEventListener("change", () => { currentPage = 1; loadTable(); });
-    searchInput.addEventListener("input", () => { currentPage = 1; loadTable(); });
+    if (dateInput) {
+        dateInput.addEventListener("change", () => { 
+            currentPage = 1; 
+            loadTable(); 
+        });
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener("input", () => { 
+            currentPage = 1; 
+            loadTable(); 
+        });
+    }
 
     /* ---------------------------
        REALTIME SUBSCRIPTION
     --------------------------- */
-    supabase
-        .channel('attendance-changes')
-        .on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'attendance_records' 
-        }, () => {
-            loadTable();
-        })
-        .subscribe();
+    if (supabase && supabase.channel) {
+        const channel = supabase
+            .channel('attendance-changes')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'attendance' 
+            }, (payload) => {
+                console.log('Realtime update:', payload);
+                loadTable();
+            })
+            .subscribe();
 
+        console.log('Realtime subscription active:', channel);
+    } else {
+        console.warn('Supabase realtime not available - updates will not be automatic');
+    }
+
+    /* ---------------------------
+       INITIALIZATION
+    --------------------------- */
     // Apply role-based UI changes
     adjustUIForRole();
     
     // Initial load
+    console.log('Initializing attendance page...');
     loadTable();
 }

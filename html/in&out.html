@@ -108,6 +108,14 @@
         </div>
     </div>
 
+    <!-- SCRIPTS - ORDER MATTERS! -->
+    <!-- 1. Load Supabase library FIRST -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 2. Load config file SECOND -->
+    <script src="../js/supabase-config.js"></script>
+    
+    <!-- 3. Load your app script LAST -->
     <script src="../js/in&out.js"></script>
 </body>
 </html>

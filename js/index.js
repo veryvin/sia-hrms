@@ -32,56 +32,85 @@ document.addEventListener("DOMContentLoaded", () => {
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Changed: Take email instead of employeeId from the form
-    const email = document.getElementById("employeeId").value.trim(); // Assuming the input field ID is still 'employeeId'
+    const email = document.getElementById("employeeId").value.trim();
     const pwd = document.getElementById("password").value.trim();
+
+    console.log("🔍 Attempting login with email:", email);
+    console.log("🔍 Password length:", pwd.length);
 
     errorMessage.style.display = "none";
 
     try {
-        // 1. Get employee details including the stored password using the email
+        // 1. Get employee details - EXPLICITLY specify the foreign key
         const { data: employee, error: empError } = await supabase
             .from('employees')
-            .select('id, email, employee_id, first_name, last_name, password, positions(position_name, departments(department_name), roles(role_name))')
-            .eq('email', email) // ⬅️ NEW: Query using email
+            .select(`
+                id, 
+                email, 
+                employee_id, 
+                first_name, 
+                last_name, 
+                password,
+                position:positions!employees_position_id_fkey(
+                    position_name,
+                    department:departments(department_name),
+                    role:roles(role_name)
+                )
+            `)
+            .eq('email', email)
             .single();
 
+        console.log("📊 Query result - employee:", employee);
+        console.log("❌ Query error:", empError);
+
         if (empError || !employee) {
+            console.log("⚠️ Employee not found or query error");
             errorMessage.textContent = "❌ Invalid Email or Password.";
             errorMessage.style.display = "block";
             return;
         }
+
+        console.log("🔑 Stored password in DB:", employee.password);
+        console.log("🔑 Entered password:", pwd);
+        console.log("🔑 Passwords match:", employee.password === pwd);
 
         // 2. CHECK PASSWORD DIRECTLY (For Testing Only!)
         if (employee.password !== pwd) {
+            console.log("⚠️ Password mismatch!");
             errorMessage.textContent = "❌ Invalid Email or Password.";
             errorMessage.style.display = "block";
             return;
         }
 
-        // 3. Store user session
+        console.log("✅ Login successful! Redirecting...");
+
+        // 3. Store user session - UPDATED to match new structure
         const userSession = {
             id: employee.id, 
             empId: employee.employee_id,
             email: employee.email,
             firstName: employee.first_name,
             lastName: employee.last_name,
-            role: employee.positions?.roles?.role_name || 'Employee',
-            position: employee.positions?.position_name || '',
-            department: employee.positions?.departments?.department_name || ''
+            role: employee.position?.role?.role_name || 'Employee',
+            position: employee.position?.position_name || '',
+            department: employee.position?.department?.department_name || ''
         };
+
+        console.log("👤 User session:", userSession);
 
         localStorage.setItem("loggedInUser", JSON.stringify(userSession));
         
         // 4. Redirect based on role
         if (userSession.role === "Admin" || userSession.role === "HR" || userSession.role === "Manager") {
+            console.log("🎯 Redirecting to dashboard...");
             window.location.href = "dashboard.html";
         } else {
+            console.log("🎯 Redirecting to attendance...");
             window.location.href = "attendance.html";
         }
 
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
         errorMessage.textContent = "❌ An error occurred. Please try again.";
         errorMessage.style.display = "block";
     }

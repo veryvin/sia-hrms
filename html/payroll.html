@@ -345,5 +345,125 @@
 
 <!-- THEN load payroll.js -->
 <script src="../js/payroll.js"></script>
+<!-- ========================================= -->
+<!-- PAYROLL CUSTOM MODALS - Add before </body> -->
+<!-- ========================================= -->
+
+<!-- 1. PAYROLL CONFIRMATION MODAL -->
+<div id="confirmPayrollModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 450px;">
+    <span class="custom-close-btn" id="closeConfirmModal">&times;</span>
+    
+    <div class="receipt-header">
+      <div class="receipt-logo-box">
+        <img src="../images/rmt2.png" alt="RMT Logo" class="receipt-logo">
+        <div class="receipt-company-name">RMT MARKETING</div>
+      </div>
+      <div class="receipt-company-type">PAYROLL MANAGEMENT SYSTEM</div>
+    </div>
+
+    <div id="confirmPayrollContent" style="padding: 0 5px;"></div>
+
+    <div class="custom-modal-buttons">
+      <button id="cancelConfirmBtn" class="custom-btn-cancel">Cancel</button>
+      <button id="proceedPayrollBtn" class="custom-btn-submit">✓ Process Payroll</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. DELETE CONFIRMATION MODAL -->
+<div id="deleteConfirmModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 420px;">
+    <span class="custom-close-btn" id="closeDeleteModal">&times;</span>
+    
+    <div class="custom-modal-body-center">
+      <!-- Warning Icon -->
+      <div class="custom-icon-circle custom-icon-danger">
+        <span class="custom-icon-emoji">⚠️</span>
+      </div>
+      
+      <!-- Header -->
+      <h3 class="custom-modal-title custom-text-dark">Delete Payroll Record?</h3>
+      
+      <!-- Message -->
+      <p class="custom-modal-message">
+        Are you sure you want to delete this payroll record?<br>
+        <strong class="custom-text-danger">This action cannot be undone.</strong>
+      </p>
+      
+      <!-- Buttons -->
+      <div class="custom-modal-buttons">
+        <button id="cancelDeleteBtn" class="custom-btn-cancel">Cancel</button>
+        <button id="confirmDeleteBtn" class="custom-btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. SUCCESS MESSAGE MODAL -->
+<div id="successModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 400px;">
+    <span class="custom-close-btn" id="closeSuccessModal">&times;</span>
+    
+    <div class="custom-modal-body-center">
+      <!-- Success Icon -->
+      <div class="custom-icon-circle custom-icon-success">
+        <span class="custom-icon-emoji">✅</span>
+      </div>
+      
+      <!-- Message -->
+      <h3 id="successMessage" class="custom-modal-title custom-text-success">
+        Payroll processed successfully!
+      </h3>
+      
+      <!-- OK Button -->
+      <button id="successOkBtn" class="custom-btn-submit custom-btn-wide">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. ERROR MESSAGE MODAL -->
+<div id="errorModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 400px;">
+    <span class="custom-close-btn" id="closeErrorModal">&times;</span>
+    
+    <div class="custom-modal-body-center">
+      <!-- Error Icon -->
+      <div class="custom-icon-circle custom-icon-danger">
+        <span class="custom-icon-emoji">❌</span>
+      </div>
+      
+      <!-- Message -->
+      <h3 id="errorMessage" class="custom-modal-title custom-text-danger">
+        An error occurred!
+      </h3>
+      
+      <!-- OK Button -->
+      <button id="errorOkBtn" class="custom-btn-cancel custom-btn-wide">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5. WARNING MESSAGE MODAL -->
+<div id="warningModal" class="custom-modal">
+  <div class="custom-modal-content" style="max-width: 400px;">
+    <span class="custom-close-btn" id="closeWarningModal">&times;</span>
+    
+    <div class="custom-modal-body-center">
+      <!-- Warning Icon -->
+      <div class="custom-icon-circle custom-icon-warning">
+        <span class="custom-icon-emoji">⚠️</span>
+      </div>
+      
+      <!-- Message -->
+      <h3 id="warningMessage" class="custom-modal-title custom-text-warning">
+        Warning message
+      </h3>
+      
+      <!-- OK Button -->
+      <button id="warningOkBtn" class="custom-btn-submit custom-btn-wide">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

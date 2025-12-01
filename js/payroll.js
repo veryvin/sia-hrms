@@ -68,7 +68,164 @@ document.addEventListener("DOMContentLoaded", () => {
       return 183541.80 + (grossPay - 666666) * 0.35;
     }
   };
+  
 
+// ==================== CUSTOM MODAL FUNCTIONS ====================
+
+// Show Payroll Confirmation Modal
+function showPayrollConfirmation(data) {
+  const modal = document.getElementById('confirmPayrollModal');
+  const content = document.getElementById('confirmPayrollContent');
+  
+  content.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <h3 style="color: #111827; font-size: 18px; font-weight: 600; margin-bottom: 15px;">
+        Process Payroll for ${data.employeeName}?
+      </h3>
+    </div>
+    
+    <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <div class="detail-row">
+        <span class="detail-label">Employee No:</span>
+        <span class="detail-value">${data.employeeNo}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Period:</span>
+        <span class="detail-value">${data.periodStart} to ${data.periodEnd}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Days Worked:</span>
+        <span class="detail-value">${data.daysWorked} days</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Daily Rate:</span>
+        <span class="detail-value">₱${data.dailyRate.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+    </div>
+    
+    <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 2px solid #22c55e;">
+      <div class="detail-row">
+        <span class="detail-label">Gross Pay:</span>
+        <span class="detail-value">₱${data.grossPay.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label" style="font-size: 12px;">SSS:</span>
+        <span class="detail-value" style="font-size: 12px;">₱${data.sss.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label" style="font-size: 12px;">PhilHealth:</span>
+        <span class="detail-value" style="font-size: 12px;">₱${data.philHealth.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label" style="font-size: 12px;">Pag-IBIG:</span>
+        <span class="detail-value" style="font-size: 12px;">₱${data.pagibig.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label" style="font-size: 12px;">Withholding Tax:</span>
+        <span class="detail-value" style="font-size: 12px;">₱${data.wtax.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+      <div class="detail-row" style="border-top: 2px solid #22c55e; padding-top: 10px; margin-top: 10px;">
+        <span class="detail-label">Total Deductions:</span>
+        <span class="detail-value">₱${data.totalDeductions.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+      <div class="detail-row" style="border-top: none; font-size: 18px; color: #16a34a; font-weight: 700;">
+        <span class="detail-label">NET PAY:</span>
+        <span class="detail-value">₱${data.netPay.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+      </div>
+    </div>
+  `;
+  
+  modal.classList.add('show');
+  
+  // Set up button handlers
+  const proceedBtn = document.getElementById('proceedPayrollBtn');
+  const cancelBtn = document.getElementById('cancelConfirmBtn');
+  const closeBtn = document.getElementById('closeConfirmModal');
+  
+  const confirmHandler = (e) => {
+    e.preventDefault();
+    modal.classList.remove('show');
+    if (window.confirmPayrollCallback) {
+      window.confirmPayrollCallback();
+    }
+  };
+  
+  const cancelHandler = (e) => {
+    e.preventDefault();
+    modal.classList.remove('show');
+    if (window.confirmPayrollCancelCallback) {
+      window.confirmPayrollCancelCallback();
+    }
+  };
+  
+  if (proceedBtn) proceedBtn.onclick = confirmHandler;
+  if (cancelBtn) cancelBtn.onclick = cancelHandler;
+  if (closeBtn) closeBtn.onclick = cancelHandler;
+}
+// Show Success Message
+function showSuccess(message) {
+  const modal = document.getElementById('successModal');
+  document.getElementById('successMessage').textContent = message;
+  modal.classList.add('show');
+  
+  const close = () => modal.classList.remove('show');
+  document.getElementById('successOkBtn').onclick = close;
+  document.getElementById('closeSuccessModal').onclick = close;
+}
+
+// Show Error Message
+function showError(message) {
+  const modal = document.getElementById('errorModal');
+  document.getElementById('errorMessage').textContent = message;
+  modal.classList.add('show');
+  
+  const close = () => modal.classList.remove('show');
+  document.getElementById('errorOkBtn').onclick = close;
+  document.getElementById('closeErrorModal').onclick = close;
+}
+
+/// Show Warning Message
+function showWarning(message) {
+  const modal = document.getElementById('warningModal');
+  document.getElementById('warningMessage').textContent = message;
+  modal.classList.add('show');
+  
+  const close = () => modal.classList.remove('show');
+  document.getElementById('warningOkBtn').onclick = close;
+  document.getElementById('closeWarningModal').onclick = close;
+}
+
+// Show Delete Confirmation
+function showDeleteConfirmation() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('deleteConfirmModal');
+    if (!modal) {
+      // Fallback to browser confirm if modal doesn't exist
+      resolve(confirm('Are you sure you want to delete this payroll record?'));
+      return;
+    }
+    
+    modal.classList.add('show');
+    
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const cancelBtn = document.getElementById('cancelDeleteBtn');
+    const closeBtn = document.getElementById('closeDeleteModal');
+    
+    const handleConfirm = () => {
+      modal.classList.remove('show');
+      resolve(true);
+    };
+    
+    const handleCancel = () => {
+      modal.classList.remove('show');
+      resolve(false);
+    };
+    
+    if (confirmBtn) confirmBtn.onclick = handleConfirm;
+    if (cancelBtn) cancelBtn.onclick = handleCancel;
+    if (closeBtn) closeBtn.onclick = handleCancel;
+  });
+}
   // ==================== PERIOD UTILITIES ====================
   function getCurrentPeriod() {
     const now = new Date();
@@ -349,100 +506,109 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==================== PROCESS PAYROLL ====================
-  window.processEmployeePayroll = async function(employeeUUID) {
-    const employees = await fetchAllEmployees();
-    const employee = employees.find(e => e.id === employeeUUID);
-    
-    if (!employee) {
-      alert("❌ Employee not found!");
-      return;
-    }
+ // ===================================================
+// REPLACE THESE FUNCTIONS IN YOUR payroll.js
+// ===================================================
 
-    console.log("🔍 DEBUGGING PAYROLL PROCESS:");
-    console.log("Employee Object:", employee);
-    console.log("Employee UUID:", employee.id);
-    console.log("Employee Number:", employee.employee_id);
+// ==================== PROCESS PAYROLL ====================
+window.processEmployeePayroll = async function(employeeUUID) {
+  const employees = await fetchAllEmployees();
+  const employee = employees.find(e => e.id === employeeUUID);
+  
+  if (!employee) {
+    showError("Employee not found!");
+    return;
+  }
 
-    const period = selectedPeriod;
-    console.log("Period:", period);
+  const period = selectedPeriod;
 
-    // Check if already processed
-    const already = await fetchPayrollForEmployeeAndPeriod(employee.id, period);
-    if (already) {
-      alert("⚠️ Payroll already processed for this employee in this period.");
-      return;
-    }
+  // Check if already processed
+  const already = await fetchPayrollForEmployeeAndPeriod(employee.id, period);
+  if (already) {
+    showWarning("Payroll already processed for this employee in this period.");
+    return;
+  }
 
-    // Calculate payroll (will work even with 0 attendance)
-    const calculation = await calculateEmployeePayroll(employee, period.start, period.end);
+  // Calculate payroll
+  const calculation = await calculateEmployeePayroll(employee, period.start, period.end);
 
-    if (!calculation) {
-      alert(`❌ Error calculating payroll for ${employee.first_name} ${employee.last_name}.`);
-      return;
-    }
+  if (!calculation) {
+    showError(`Error calculating payroll for ${employee.first_name} ${employee.last_name}.`);
+    return;
+  }
 
-    console.log("💰 Calculation Result:", calculation);
-
-    // Show confirmation with attendance warning if needed
-    let confirmMsg = 
-      `📊 PAYROLL SUMMARY\n\n` +
-      `Employee ID: ${employee.employee_id}\n` +
-      `Employee Name: ${employee.first_name} ${employee.last_name}\n\n` +
-      `Period: ${period.start} to ${period.end}\n` +
-      `Days Present: ${calculation.daysWorked} days\n` +
-      `Daily Rate: ₱${calculation.dailyRate.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n\n`;
-
-    if (calculation.daysWorked === 0) {
-      confirmMsg += `⚠️ WARNING: No attendance records found!\n`;
-      confirmMsg += `This will result in ZERO pay.\n\n`;
-    }
-
-    confirmMsg +=
-      `💰 GROSS PAY: ₱${calculation.grossPay.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
-      `📉 DEDUCTIONS: ₱${calculation.totalDeductions.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
-      `   • SSS: ₱${calculation.sss.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
-      `   • PhilHealth: ₱${calculation.philHealth.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
-      `   • Pag-IBIG: ₱${calculation.pagibig.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
-      `   • Tax: ₱${calculation.wtax.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
-      `💵 NET PAY: ₱${calculation.netPay.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n\n` +
-      `Process this payroll?`;
-
-    if (!confirm(confirmMsg)) return;
-
-    // Save to database
-    const newRecord = {
-      employee_id: employee.id,
-      pay_period_start: period.start,
-      pay_period_end: period.end,
-      base_pay: calculation.grossPay,
-      overtime_pay: 0,
-      bonus: 0,
-      deductions: calculation.totalDeductions,
-      tax: calculation.wtax,
-      net_pay: calculation.netPay,
-      payment_date: new Date().toISOString().split("T")[0],
-      status: "Processed",
-      created_at: new Date().toISOString()
+  // Show custom confirmation modal with payroll details
+  const confirmed = await new Promise((resolve) => {
+    // Set callback FIRST before showing modal
+    window.confirmPayrollCallback = () => {
+      resolve(true);
     };
-
-    const saved = await savePayrollRecord(newRecord);
-    if (saved) {
-      alert("✅ Payroll processed successfully!");
-      await fetchAllPayrollRecords();
-      await renderEmployeeTable();
-    }
-  };
-
-  // ==================== DELETE PAYROLL ====================
-  window.deletePayroll = async function(id) {
-    if (!confirm("⚠️ Are you sure you want to delete this payroll record?")) return;
     
-    const ok = await deletePayrollRecord(id);
-    if (ok) {
-      alert("✅ Payroll record deleted!");
-      await renderEmployeeTable();
-    }
+    // Then show the modal (which will attach the handlers)
+    showPayrollConfirmation({
+      employeeNo: employee.employee_id,
+      employeeName: `${employee.first_name} ${employee.last_name}`,
+      periodStart: period.start,
+      periodEnd: period.end,
+      daysWorked: calculation.daysWorked,
+      dailyRate: calculation.dailyRate,
+      grossPay: calculation.grossPay,
+      sss: calculation.sss,
+      philHealth: calculation.philHealth,
+      pagibig: calculation.pagibig,
+      wtax: calculation.wtax,
+      totalDeductions: calculation.totalDeductions,
+      netPay: calculation.netPay
+    });
+    
+    // The cancel handlers are now set inside showPayrollConfirmation
+    // So we also need to handle rejection here
+    const modal = document.getElementById('confirmPayrollModal');
+    const cancelHandler = () => {
+      modal.classList.remove('show');
+      resolve(false);
+    };
+    
+    // Store cancel handler reference
+    window.confirmPayrollCancelCallback = cancelHandler;
+  });
+
+  if (!confirmed) return;
+
+  // Save to database
+  const newRecord = {
+    employee_id: employee.id,
+    pay_period_start: period.start,
+    pay_period_end: period.end,
+    base_pay: calculation.grossPay,
+    overtime_pay: 0,
+    bonus: 0,
+    deductions: calculation.totalDeductions,
+    tax: calculation.wtax,
+    net_pay: calculation.netPay,
+    payment_date: new Date().toISOString().split("T")[0],
+    status: "Processed",
+    created_at: new Date().toISOString()
   };
+
+  const saved = await savePayrollRecord(newRecord);
+  if (saved) {
+    showSuccess("✅ Payroll processed successfully!");
+    await fetchAllPayrollRecords();
+    await renderEmployeeTable();
+  }
+};
+// ==================== DELETE PAYROLL ====================
+window.deletePayroll = async function(id) {
+  const confirmed = await showDeleteConfirmation();
+  if (!confirmed) return;
+  
+  const ok = await deletePayrollRecord(id);
+  if (ok) {
+    showSuccess("✅ Payroll record deleted successfully!");
+    await renderEmployeeTable();
+  }
+};
 
   // ==================== VIEW DETAILS ====================
   window.showPayrollDetails = async function(id) {

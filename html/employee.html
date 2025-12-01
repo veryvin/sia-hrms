@@ -113,89 +113,109 @@
     </div>
   </div>
 
-  <script>
-    // Set welcome text
-    const userEmail = localStorage.getItem('userEmail');
-    document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
-  </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sidebar = document.querySelector(".sidebar");
+            
+            // Create hamburger button
+            if (!document.querySelector(".hamburger-btn")) {
+                const hamburger = document.createElement("button");
+                hamburger.className = "hamburger-btn";
+                hamburger.innerHTML = '<span></span><span></span><span></span>';
+                sidebar.appendChild(hamburger);
+            }
 
-  <!-- Animated Sidebar Script -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const sidebar = document.querySelector(".sidebar");
-      
-      if (!document.querySelector(".hamburger-btn")) {
-        const hamburger = document.createElement("button");
-        hamburger.className = "hamburger-btn";
-        hamburger.innerHTML = '<span></span><span></span><span></span>';
-        sidebar.appendChild(hamburger);
-      }
+            const hamburger = document.querySelector(".hamburger-btn");
+            let isExpanded = false;
+            let hoverTimeout;
 
-      const hamburger = document.querySelector(".hamburger-btn");
-      let isExpanded = false;
-      let hoverTimeout;
+            hamburger.addEventListener("click", (e) => {
+                e.stopPropagation();
+                isExpanded = !isExpanded;
+                sidebar.classList.toggle("expanded", isExpanded);
+            });
 
-      hamburger.addEventListener("click", (e) => {
-        e.stopPropagation();
-        isExpanded = !isExpanded;
-        sidebar.classList.toggle("expanded", isExpanded);
-      });
+            sidebar.addEventListener("mouseenter", () => {
+                clearTimeout(hoverTimeout);
+                sidebar.classList.add("expanded");
+            });
 
-      sidebar.addEventListener("mouseenter", () => {
-        clearTimeout(hoverTimeout);
-        sidebar.classList.add("expanded");
-      });
+            sidebar.addEventListener("mouseleave", () => {
+                if (!isExpanded) {
+                    hoverTimeout = setTimeout(() => {
+                        sidebar.classList.remove("expanded");
+                    }, 300);
+                }
+            });
 
-      sidebar.addEventListener("mouseleave", () => {
-        if (!isExpanded) {
-          hoverTimeout = setTimeout(() => {
-            sidebar.classList.remove("expanded");
-          }, 300);
-        }
-      });
+            // Update nav items structure
+            const navItems = document.querySelectorAll(".nav-item");
+            navItems.forEach(item => {
+                const text = item.textContent.trim();
+                const icon = text.split(" ")[0];
+                const label = text.substring(icon.length).trim();
+                item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
+            });
 
-      const navItems = document.querySelectorAll(".nav-item");
-      navItems.forEach(item => {
-        const text = item.textContent.trim();
-        const icon = text.split(" ")[0];
-        const label = text.substring(icon.length).trim();
-        item.innerHTML = `<span class="nav-item-icon">${icon}</span><span class="nav-item-text">${label}</span>`;
-      });
+            // Set active nav item
+            const currentPage = window.location.pathname.split("/").pop();
+            navItems.forEach(item => {
+                if (item.getAttribute("href") === currentPage) {
+                    item.classList.add("active");
+                }
+            });
 
-      const currentPage = window.location.pathname.split("/").pop();
-      navItems.forEach(item => {
-        if (item.getAttribute("href") === currentPage) {
-          item.classList.add("active");
-        }
-      });
+            // User menu functionality
+            const userIcon = document.getElementById("userIcon");
+            const dropdownMenu = document.getElementById("dropdownMenu");
+            const logoutBtn = document.getElementById("logoutBtn");
+            const userEmailDisplay = document.getElementById("userEmailDisplay");
 
-      const userIcon = document.getElementById("userIcon");
-      const dropdownMenu = document.getElementById("dropdownMenu");
-      const logoutBtn = document.getElementById("logoutBtn");
+            // Get user data
+            const storedUserString = localStorage.getItem('loggedInUser');
+            const user = storedUserString ? JSON.parse(storedUserString) : {};
+            const userEmail = user.email || 'N/A';
 
-      userIcon?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        dropdownMenu.classList.toggle("show");
-      });
+            // Set welcome text
+            document.getElementById('welcomeText').textContent = "Welcome, " + userEmail;
+            
+            if (userEmailDisplay) {
+                userEmailDisplay.textContent = userEmail;
+            }
 
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".user-menu-sidebar")) {
-          dropdownMenu.classList.remove("show");
-        }
-      });
+            userIcon?.addEventListener("click", (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle("show");
+            });
 
-      logoutBtn?.addEventListener("click", () => {
-        localStorage.removeItem("loggedInUser");
-        localStorage.removeItem("userEmail");
-        window.location.href = "index.html";
-      });
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest(".user-menu-sidebar")) {
+                    dropdownMenu.classList.remove("show");
+                }
+            });
 
-      const userEmailDisplay = document.getElementById("userEmailDisplay");
-      if (userEmailDisplay && userEmail) {
-        userEmailDisplay.textContent = userEmail;
-      }
-    });
-  </script>
+            logoutBtn?.addEventListener("click", () => {
+                localStorage.removeItem("loggedInUser");
+                localStorage.removeItem("userEmail");
+                window.location.href = "index.html";
+            });
+
+            // Role-based visibility
+            const userRole = user.role;
+            if (userRole === "Employee") {
+                ["navDashboard", "navEmployees", "navPayroll", "navReports"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = "none";
+                });
+            }
+
+            // Display current date
+            const dateElement = document.getElementById('currentDate');
+            const today = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = today.toLocaleDateString('en-US', options);
+        });
+    </script>
 
   <!-- FIXED: Added Supabase library and config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -1,93 +1,223 @@
 document.addEventListener("DOMContentLoaded", () => {
   const supabase = window.supabaseClient;
   
+  // Check if Supabase client is initialized
+  if (!supabase) {
+    console.error("Supabase client is not initialized on the window object.");
+    const leaveList = document.getElementById('leaveList');
+    if (leaveList) {
+      leaveList.innerHTML = `<p class="no-leave" style="color: red;">ERROR: Supabase connection failed. Please check your configuration.</p>`;
+    }
+    return;
+  }
+  
+  console.log("✅ Supabase client loaded successfully");
+  
+  // ===================================================
+  // DISPLAY LOGGED IN USER
+  // ===================================================
+  const welcomeText = document.getElementById('welcomeText');
+  const userEmailDisplay = document.getElementById('userEmailDisplay');
+  
+  const loggedInUserString = localStorage.getItem('loggedInUser');
+  if (loggedInUserString) {
+    try {
+      const loggedInUser = JSON.parse(loggedInUserString);
+      const displayName = loggedInUser.email || loggedInUser.first_name || loggedInUser.username || 'User';
+      
+      if (welcomeText) {
+        welcomeText.textContent = `Welcome, ${displayName}`;
+      }
+      if (userEmailDisplay) {
+        userEmailDisplay.textContent = displayName;
+      }
+      
+      console.log("👤 Logged in user:", loggedInUser);
+    } catch (e) {
+      console.error("Error parsing logged in user:", e);
+      if (welcomeText) welcomeText.textContent = "Welcome, User";
+    }
+  } else {
+    console.warn("⚠️ No logged in user found in localStorage");
+    if (welcomeText) welcomeText.textContent = "Welcome, Guest";
+  }
+  
   // ===================================================
   // FETCH DATA FROM SUPABASE
   // ===================================================
   async function fetchLeaves() {
     try {
+      console.log("🔍 Fetching leave requests...");
+      
+      // First, let's try a simpler query to debug
       const { data, error } = await supabase
         .from('leave_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .order('id', { ascending: false });
+        .select(`
+          id,
+          employee_id,
+          leave_type,
+          start_date,
+          end_date,
+          number_of_days,
+          comments,
+          status,
+          created_at,
+          employees(
+            employee_id,
+            first_name,
+            last_name,
+            positions(
+              position_name,
+              departments(department_name)
+            )
+          )
+        `)
+        .ilike('status', 'pending')
+        .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data || [];
+      console.log("📊 Query result:", { data, error });
+      
+      if (error) {
+        console.error("❌ Supabase query error:", error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("⚠️ No pending leave requests found");
+        return [];
+      }
+
+      console.log(`✅ Found ${data.length} pending leave request(s)`);
+
+      return (data || []).map(leave => {
+        const employeeData = leave.employees;
+        const firstName = employeeData?.first_name || 'Unknown';
+        const lastName = employeeData?.last_name || '';
+        const department = employeeData?.positions?.departments?.department_name || '-';
+        const position = employeeData?.positions?.position_name || '-';
+        
+        console.log("Processing leave:", {
+          id: leave.id,
+          employeeData,
+          department,
+          position
+        });
+        
+        return {
+          id: leave.id,
+          employeeId: leave.employee_id,
+          employeeName: `${firstName} ${lastName}`.trim(),
+          department,
+          position,
+          leaveType: leave.leave_type,
+          startDate: leave.start_date,
+          endDate: leave.end_date,
+          numberOfDays: leave.number_of_days,
+          reason: leave.comments || '-',
+          status: leave.status
+        };
+      });
     } catch (error) {
-      console.error('Error fetching leaves:', error);
+      console.error('❌ Error fetching leaves:', error);
       return [];
     }
   }
 
   async function updateLeaveStatus(id, status) {
     try {
+      const loggedInUserString = localStorage.getItem('loggedInUser');
+      let updateData = { 
+        status: status,
+        updated_at: new Date().toISOString()
+      };
+
+      if (status === 'Approved' && loggedInUserString) {
+        try {
+          const loggedInUser = JSON.parse(loggedInUserString);
+          // Use the UUID id field, not employee_id which is text like "EMP-100"
+          updateData.approved_by = loggedInUser.id;
+          updateData.approved_date = new Date().toISOString();
+          console.log("Approver UUID:", loggedInUser.id);
+        } catch (parseError) {
+          console.warn("Could not parse logged in user:", parseError);
+        }
+      }
+
+      console.log("Updating leave status:", { id, updateData });
+
       const { error } = await supabase
         .from('leave_requests')
-        .update({ 
-          status: status,
-          decisionAt: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;
+      
+      console.log("✅ Leave status updated successfully");
       return true;
     } catch (error) {
-      console.error('Error updating leave status:', error);
+      console.error('❌ Error updating leave status:', error);
       alert('❌ Error updating leave: ' + error.message);
       return false;
     }
   }
 
-  async function fetchLeaveBalances() {
+  async function fetchLeaveBalance(employeeId) {
     try {
-      const { data, error } = await supabase.from('leave_balances').select('*');
-      if (error) throw error;
+      console.log("Fetching balance for employee:", employeeId);
       
-      // Convert array to object keyed by employeeId
-      const balances = {};
-      (data || []).forEach(item => {
-        balances[item.employeeId] = item;
-      });
-      return balances;
+      const { data, error } = await supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching balance:", error);
+        throw error;
+      }
+      
+      const balance = data ? data.balance : 12;
+      console.log("Employee balance:", balance);
+      return balance;
     } catch (error) {
-      console.error('Error fetching balances:', error);
-      return {};
+      console.error('Error fetching balance:', error);
+      return 12;
     }
   }
 
   async function updateLeaveBalance(employeeId, newBalance) {
     try {
-      // Check if balance exists
+      console.log("Updating balance for employee:", employeeId, "to:", newBalance);
+      
       const { data: existing } = await supabase
         .from('leave_balances')
         .select('*')
-        .eq('employeeId', employeeId)
+        .eq('employee_id', employeeId)
         .single();
 
       if (existing) {
-        // Update existing balance
         const { error } = await supabase
           .from('leave_balances')
           .update({ balance: newBalance })
-          .eq('employeeId', employeeId);
+          .eq('employee_id', employeeId);
         
         if (error) throw error;
       } else {
-        // Insert new balance
         const { error } = await supabase
           .from('leave_balances')
           .insert([{ 
-            employeeId: employeeId, 
+            employee_id: employeeId, 
             balance: newBalance,
             year: new Date().getFullYear()
           }]);
         
         if (error) throw error;
       }
+      
+      console.log("✅ Balance updated successfully");
       return true;
     } catch (error) {
-      console.error('Error updating balance:', error);
+      console.error('❌ Error updating balance:', error);
       return false;
     }
   }
@@ -130,26 +260,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===================================================
-  // CALCULATE LEAVE DAYS
-  // ===================================================
-  function calculateDays(startDate, endDate) {
-    const sd = new Date(startDate); 
-    sd.setHours(0,0,0,0);
-    const ed = new Date(endDate); 
-    ed.setHours(0,0,0,0);
-    const ms = 24*60*60*1000;
-    const diff = Math.round((ed - sd)/ms) + 1;
-    return diff > 0 ? diff : 0;
-  }
-
-  // ===================================================
   // RENDER TABLE
   // ===================================================
   async function renderManagerTable(filter = 'all') {
+    console.log("🎨 Rendering table with filter:", filter);
     leaveList.innerHTML = '<p class="no-leave">Loading...</p>';
     
     const leaves = await fetchLeaves();
+    console.log("Leaves fetched:", leaves.length);
+    
     const filtered = applyDateFilter(leaves, filter);
+    console.log("After filter:", filtered.length);
 
     if (!filtered || filtered.length === 0) {
       leaveList.innerHTML = `<p class="no-leave">No pending leave requests</p>`;
@@ -175,21 +296,19 @@ document.addEventListener("DOMContentLoaded", () => {
           </thead>
           <tbody>
             ${filtered.map(r => {
-              const days = calculateDays(r.startDate, r.endDate);
-
               return `
                 <tr>
                   <td>${r.id}</td>
                   <td>${r.employeeId}</td>
                   <td>${r.employeeName}</td>
-                  <td>${r.department || '-'}</td>
-                  <td>${r.position || '-'}</td>
+                  <td>${r.department}</td>
+                  <td>${r.position}</td>
                   <td>${r.leaveType}</td>
                   <td>${r.startDate} → ${r.endDate}</td>
-                  <td>${days}</td>
-                  <td>${r.reason || '-'}</td>
+                  <td>${r.numberOfDays}</td>
+                  <td>${r.reason}</td>
                   <td>
-                    <button class="action-btn btn-approve" data-id="${r.id}" data-days="${days}" data-emp="${r.employeeId}">Approve</button>
+                    <button class="action-btn btn-approve" data-id="${r.id}" data-days="${r.numberOfDays}" data-emp="${r.employeeId}">Approve</button>
                     <button class="action-btn btn-reject" data-id="${r.id}" style="background:#b91c1c;">Reject</button>
                   </td>
                 </tr>
@@ -200,6 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
     leaveList.innerHTML = tableHTML;
+    console.log("✅ Table rendered successfully");
   }
 
   // ===================================================
@@ -210,43 +330,39 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = parseInt(e.target.dataset.id);
       const days = parseInt(e.target.dataset.days);
       const empId = e.target.dataset.emp;
-      await handleDecision(id, 'approved', days, empId);
+      await handleDecision(id, 'Approved', days, empId);
     } else if (e.target.classList.contains('btn-reject')) {
       const id = parseInt(e.target.dataset.id);
-      await handleDecision(id, 'rejected');
+      await handleDecision(id, 'Rejected');
     }
   });
 
   async function handleDecision(id, decision, days = 0, empId = null) {
-    if (decision === 'approved') {
+    if (decision === 'Approved') {
       if (!confirm(`Approve this leave request for ${days} day(s)?`)) return;
       
-      // Deduct days from balance
-      const balances = await fetchLeaveBalances();
+      const currentBalance = await fetchLeaveBalance(empId);
       
-      if (!balances[empId]) {
-        balances[empId] = { balance: 12, year: new Date().getFullYear() };
+      if (currentBalance < days) {
+        alert(`❌ Insufficient leave balance! Employee has ${currentBalance} days, but ${days} days requested.`);
+        return;
       }
-
-      const currentBalance = balances[empId].balance || 12;
-      const newBalance = Math.max(0, currentBalance - days);
       
-      // Update balance first
+      const newBalance = currentBalance - days;
       const balanceUpdated = await updateLeaveBalance(empId, newBalance);
       
       if (balanceUpdated) {
-        // Then update leave status
-        const statusUpdated = await updateLeaveStatus(id, 'approved');
+        const statusUpdated = await updateLeaveStatus(id, 'Approved');
         
         if (statusUpdated) {
-          alert(`✅ Leave request approved! New balance: ${newBalance} days`);
+          alert(`✅ Leave request approved! New balance: ${newBalance} days (${days} days deducted)`);
           await renderManagerTable(dateFilter.value);
         }
       }
-    } else if (decision === 'rejected') {
+    } else if (decision === 'Rejected') {
       if (!confirm('Reject this leave request?')) return;
       
-      const statusUpdated = await updateLeaveStatus(id, 'rejected');
+      const statusUpdated = await updateLeaveStatus(id, 'Rejected');
       
       if (statusUpdated) {
         alert('❌ Leave request rejected');
@@ -258,20 +374,26 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===================================================
   // INITIAL RENDER AND FILTER BINDING
   // ===================================================
+  console.log("🚀 Starting initial render...");
   renderManagerTable('all');
 
   dateFilter.addEventListener('change', () => {
+    console.log("Filter changed to:", dateFilter.value);
     renderManagerTable(dateFilter.value);
   });
 
   // ===================================================
   // REALTIME SUBSCRIPTION
   // ===================================================
+  console.log("📡 Setting up realtime subscription...");
   supabase
     .channel('leave-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, (payload) => {
+      console.log("📨 Realtime update received:", payload);
       renderManagerTable(dateFilter.value);
     })
-    .subscribe();
+    .subscribe((status) => {
+      console.log("Subscription status:", status);
+    });
 
 });

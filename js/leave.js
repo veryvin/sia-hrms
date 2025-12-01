@@ -3,381 +3,399 @@
 // ===================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  const supabase = window.supabaseClient;
+  const supabase = window.supabaseClient;
 
-  // FIX: Check if Supabase client is initialized.
-  if (!supabase) {
-    console.error("Supabase client is not initialized on the window object. Please ensure your Supabase configuration script is loaded before leave.js.");
-    document.getElementById('leaveList').innerHTML = `<p class="no-leave" style="color: red;">ERROR: Supabase connection failed to initialize. Check console for details.</p>`;
-    return; // Stop execution if the client is not available
-  }
+  if (!supabase) {
+    console.error("Supabase client is not initialized on the window object.");
+    document.getElementById('leaveList').innerHTML = `<p class="no-leave" style="color: red;">ERROR: Supabase connection failed to initialize.</p>`;
+    return;
+  }
 
-  /* ========== SUPABASE FUNCTIONS ========== */
-  async function fetchLeaves() {
-    try {
-      const { data, error } = await supabase
-        .from('leave_requests')
-        .select(`
-          id,
-          employee_id,
-          leave_type,
-          start_date,
-          end_date,
-          number_of_days,
-          comments,
-          status,
-          created_at,
-          employees(
-            employee_id,
-            first_name,
-            last_name,
-            positions(
-              position_name,
-              departments(department_name)
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
+  /* ========== SUPABASE FUNCTIONS ========== */
+  async function fetchLeaves() {
+    try {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select(`
+          id,
+          employee_id,
+          leave_type,
+          start_date,
+          end_date,
+          number_of_days,
+          comments,
+          status,
+          created_at,
+          employees(
+            employee_id,
+            first_name,
+            last_name,
+            positions(
+              position_name,
+              departments(department_name)
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw error;
 
-      return (data || []).map(leave => ({
-        id: leave.id,
-        employeeId: leave.employee_id,
-        employeeName: `${leave.employees.first_name} ${leave.employees.last_name}`,
-        department: leave.employees.positions?.departments?.department_name || '-',
-        position: leave.employees.positions?.position_name || '-',
-        leaveType: leave.leave_type,
-        startDate: leave.start_date,
-        endDate: leave.end_date,
-        reason: leave.comments,
-        status: leave.status,
-        createdAt: leave.created_at
-      }));
-    } catch (error) {
-      console.error('Error fetching leaves:', error);
-      return [];
-    }
-  }
+      return (data || []).map(leave => ({
+        id: leave.id,
+        employeeId: leave.employee_id,
+        employeeName: `${leave.employees.first_name} ${leave.employees.last_name}`,
+        department: leave.employees.positions?.departments?.department_name || '-',
+        position: leave.employees.positions?.position_name || '-',
+        leaveType: leave.leave_type,
+        startDate: leave.start_date,
+        endDate: leave.end_date,
+        numberOfDays: leave.number_of_days,
+        reason: leave.comments,
+        status: leave.status,
+        createdAt: leave.created_at
+      }));
+    } catch (error) {
+      console.error('Error fetching leaves:', error);
+      return [];
+    }
+  }
 
-  async function fetchEmployees() {
-    try {
-      const { data, error } = await supabase
-        .from('employees')
-        .select(`
-          id,
-          employee_id,
-          first_name,
-          last_name,
-          positions(
-            position_name,
-            departments(department_name)
-          )
-        `);
+  async function fetchEmployees() {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select(`
+          id,
+          employee_id,
+          first_name,
+          last_name,
+          positions(
+            position_name,
+            departments(department_name)
+          )
+        `);
 
-      if (error) throw error;
+      if (error) throw error;
 
-      return (data || []).map(emp => ({
-        id: emp.id,
-        empId: emp.employee_id,
-        firstName: emp.first_name,
-        lastName: emp.last_name,
-        department: emp.positions?.departments?.department_name || '',
-        position: emp.positions?.position_name || ''
-      }));
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      return [];
-    }
-  }
+      return (data || []).map(emp => ({
+        id: emp.id,
+        empId: emp.employee_id,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        department: emp.positions?.departments?.department_name || '',
+        position: emp.positions?.position_name || ''
+      }));
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      return [];
+    }
+  }
 
-  async function fetchLeaveBalance(employeeId) {
-    try {
-      const { data, error } = await supabase
-        .from('leave_balances')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .single();
+  async function fetchLeaveBalance(employeeId) {
+    try {
+      const { data, error } = await supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .single();
 
-      // PGRST116 means "no rows found", which is handled by returning the default
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') throw error;
+      return data ? data.balance : 12;
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+      return 12;
+    }
+  }
 
-      // Return balance or default 12 days
-      return data ? data.balance : 12;
-    } catch (error) {
-      console.error('Error fetching balance:', error);
-      return 12;
-    }
-  }
+  async function ensureLeaveBalance(employeeId) {
+    try {
+      const { data: existing } = await supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .single();
 
-  async function ensureLeaveBalance(employeeId) {
-    try {
-      const { data: existing } = await supabase
-        .from('leave_balances')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .single();
+      if (!existing) {
+        await supabase
+          .from('leave_balances')
+          .insert({
+            employee_id: employeeId,
+            balance: 12,
+            year: new Date().getFullYear()
+          });
+      }
+    } catch (error) {
+      console.error('Error ensuring balance:', error);
+    }
+  }
 
-      if (!existing) {
-        await supabase
-          .from('leave_balances')
-          .insert({
-            employee_id: employeeId,
-            balance: 12,
-            year: new Date().getFullYear()
-          });
-      }
-    } catch (error) {
-      console.error('Error ensuring balance:', error);
-    }
-  }
+  async function insertLeaveRequest(leaveData) {
+    const days = daysBetweenInclusive(leaveData.startDate, leaveData.endDate);
 
-  async function insertLeaveRequest(leaveData) {
-    // Helper function to calculate number_of_days
-    const days = daysBetweenInclusive(leaveData.startDate, leaveData.endDate);
+    try {
+      // Check if employee has enough leave balance
+      const currentBalance = await fetchLeaveBalance(leaveData.employeeId);
+      
+      if (currentBalance < days) {
+        alert(`❌ Insufficient leave balance! You have ${currentBalance} days available, but requesting ${days} days.`);
+        return false;
+      }
 
-    try {
-      const { error } = await supabase
-        .from('leave_requests')
-        .insert({
-          employee_id: leaveData.employeeId,
-          leave_type: leaveData.leaveType,
-          start_date: leaveData.startDate,
-          end_date: leaveData.endDate,
-          number_of_days: days, // Include calculated days
-          comments: leaveData.reason, // Use 'comments' for the reason/notes
-          status: 'pending' // Ensure this is lowercase
-        });
+      const { error } = await supabase
+        .from('leave_requests')
+        .insert({
+          employee_id: leaveData.employeeId,
+          leave_type: leaveData.leaveType,
+          start_date: leaveData.startDate,
+          end_date: leaveData.endDate,
+          number_of_days: days,
+          comments: leaveData.reason,
+          status: 'Pending' // Use capitalized 'Pending'
+        });
 
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error inserting leave:', error);
-      alert('Error submitting leave request: ' + error.message);
-      return false;
-    }
-  }
+      if (error) throw error;
+      
+      alert(`✅ Leave request submitted successfully! Requesting ${days} day(s). Current balance: ${currentBalance} days.`);
+      return true;
+    } catch (error) {
+      console.error('Error inserting leave:', error);
+      alert('❌ Error submitting leave request: ' + error.message);
+      return false;
+    }
+  }
 
-  /* ========== HELPERS ========== */
-  function daysBetweenInclusive(startStr, endStr) {
-    const s = new Date(startStr);
-    const e = new Date(endStr);
-    s.setHours(0,0,0,0);
-    e.setHours(0,0,0,0);
-    const msPerDay = 24 * 60 * 60 * 1000;
-    const diff = Math.round((e - s) / msPerDay) + 1;
-    return diff > 0 ? diff : 0;
-  }
+  /* ========== HELPERS ========== */
+  function daysBetweenInclusive(startStr, endStr) {
+    const s = new Date(startStr);
+    const e = new Date(endStr);
+    s.setHours(0,0,0,0);
+    e.setHours(0,0,0,0);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diff = Math.round((e - s) / msPerDay) + 1;
+    return diff > 0 ? diff : 0;
+  }
 
-  /* ========== DOM ELEMENTS ========== */
-  const tabs = document.querySelectorAll('.tab');
-  const leaveList = document.getElementById('leaveList');
-  const leaveModal = document.getElementById('leaveModal');
-  const closeModal = document.getElementById('closeModal');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const leaveForm = document.getElementById('leaveForm');
+  /* ========== DOM ELEMENTS ========== */
+  const tabs = document.querySelectorAll('.tab');
+  const leaveList = document.getElementById('leaveList');
+  const leaveModal = document.getElementById('leaveModal');
+  const closeModal = document.getElementById('closeModal');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const leaveForm = document.getElementById('leaveForm');
 
-  const employeeIdInput = document.getElementById('employeeId');
-  const employeeNameInput = document.getElementById('employeeName');
-  const departmentInput = document.getElementById('department');
-  const positionInput = document.getElementById('position');
-  const remainingBalance = document.getElementById('remainingBalance');
-  const leaveTypeSelect = document.getElementById('leaveType');
-  const startDateInput = document.getElementById('startDate');
-  const endDateInput = document.getElementById('endDate');
-  const reasonInput = document.getElementById('reason');
+  const employeeIdInput = document.getElementById('employeeId');
+  const employeeNameInput = document.getElementById('employeeName');
+  const departmentInput = document.getElementById('department');
+  const positionInput = document.getElementById('position');
+  const remainingBalance = document.getElementById('remainingBalance');
+  const leaveTypeSelect = document.getElementById('leaveType');
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  const reasonInput = document.getElementById('reason');
 
-  /* ========== RENDER FUNCTIONS ========== */
-  async function renderBalancesTable() {
-    const employees = await fetchEmployees();
+  /* ========== RENDER FUNCTIONS ========== */
+  async function renderBalancesTable() {
+    const employees = await fetchEmployees();
 
-    if (!employees || employees.length === 0) {
-      leaveList.innerHTML = `<p class="no-leave">No employees found. Add employees from the Employee page first.</p>`;
-      return;
-    }
+    if (!employees || employees.length === 0) {
+      leaveList.innerHTML = `<p class="no-leave">No employees found. Add employees from the Employee page first.</p>`;
+      return;
+    }
 
-    const html = `
-      <div class="table-responsive">
-        <table class="leaves-table">
-          <thead>
-            <tr>
-              <th>Employee ID</th>
-              <th>Employee Name</th>
-              <th>Department</th>
-              <th>Position</th>
-              <th>Available Leaves</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-          ${
-            await Promise.all(employees.map(async emp => {
-              const fullName = `${emp.firstName} ${emp.lastName}`;
-              const balance = await fetchLeaveBalance(emp.empId);
-              await ensureLeaveBalance(emp.empId);
+    const html = `
+      <div class="table-responsive">
+        <table class="leaves-table">
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Employee Name</th>
+              <th>Department</th>
+              <th>Position</th>
+              <th>Available Leaves</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+          ${
+            await Promise.all(employees.map(async emp => {
+              const fullName = `${emp.firstName} ${emp.lastName}`;
+              const balance = await fetchLeaveBalance(emp.empId);
+              await ensureLeaveBalance(emp.empId);
 
-              return `
-                <tr>
-                  <td>${emp.empId}</td>
-                  <td>${fullName}</td>
-                  <td>${emp.department || '-'}</td>
-                  <td>${emp.position || '-'}</td>
-                  <td>${balance}</td>
-                  <td>
-                    <button 
-                      class="action-btn btn-open-request" 
-                      data-id="${emp.empId}" 
-                      data-name="${fullName}" 
-                      data-dept="${emp.department || ''}" 
-                      data-pos="${emp.position || ''}">
-                      + Leave Request
-                    </button>
-                  </td>
-                </tr>
-              `;
-            })).then(rows => rows.join(''))
-          }
-          </tbody>
-        </table>
-      </div>
-    `;
-    leaveList.innerHTML = html;
-  }
+              return `
+                <tr>
+                  <td>${emp.empId}</td>
+                  <td>${fullName}</td>
+                  <td>${emp.department || '-'}</td>
+                  <td>${emp.position || '-'}</td>
+                  <td><strong>${balance} days</strong></td>
+                  <td>
+                    <button 
+                      class="action-btn btn-open-request" 
+                      data-id="${emp.empId}" 
+                      data-name="${fullName}" 
+                      data-dept="${emp.department || ''}" 
+                      data-pos="${emp.position || ''}">
+                      + Leave Request
+                    </button>
+                  </td>
+                </tr>
+              `;
+            })).then(rows => rows.join(''))
+          }
+          </tbody>
+        </table>
+      </div>
+    `;
+    leaveList.innerHTML = html;
+  }
 
-  async function renderLeavesTab(filter) {
-    const leaves = await fetchLeaves();
-    let filtered = leaves;
+  async function renderLeavesTab(filter) {
+    const leaves = await fetchLeaves();
+    let filtered = leaves;
     
-    // CRITICAL FIX: Normalize the filter to lowercase to match the status saved in the DB ('pending', 'approved', 'rejected')
-    const normalizedFilter = filter.toLowerCase(); 
+    // Normalize filter for comparison (handle both capitalized and lowercase)
+    const normalizedFilter = filter.charAt(0).toUpperCase() + filter.slice(1).toLowerCase();
 
-    if (normalizedFilter !== 'all') {
-      // Filter based on the normalized status
-      filtered = leaves.filter(l => l.status.toLowerCase() === normalizedFilter);
-    }
+    if (filter !== 'all') {
+      // Filter based on capitalized status ('Pending', 'Approved', 'Rejected')
+      filtered = leaves.filter(l => l.status === normalizedFilter);
+    }
 
-    if (!filtered.length) {
-      leaveList.innerHTML = `<p class="no-leave">No ${normalizedFilter} requests found.</p>`;
-      return;
-    }
+    if (!filtered.length) {
+      leaveList.innerHTML = `<p class="no-leave">No ${normalizedFilter} requests found.</p>`;
+      return;
+    }
 
-    leaveList.innerHTML = filtered.map(l => `
-      <div class="leave-card ${l.status.toLowerCase()}">
-        <div class="leave-info">
-          <h4>${l.employeeName} <span class="status ${l.status.toLowerCase()}">${l.status}</span></h4>
-          <p><strong>ID:</strong> ${l.employeeId}</p>
-          <p><strong>Type:</strong> ${l.leaveType}</p>
-          <p><strong>Dates:</strong> ${l.startDate} → ${l.endDate}</p>
-          <p><strong>Reason:</strong> ${l.reason || '-'}</p>
-        </div>
-      </div>
-    `).join('');
-  }
+    leaveList.innerHTML = filtered.map(l => `
+      <div class="leave-card ${l.status.toLowerCase()}">
+        <div class="leave-info">
+          <h4>${l.employeeName} <span class="status ${l.status.toLowerCase()}">${l.status.toUpperCase()}</span></h4>
+          <p><strong>ID:</strong> ${l.employeeId}</p>
+          <p><strong>Department:</strong> ${l.department}</p>
+          <p><strong>Position:</strong> ${l.position}</p>
+          <p><strong>Type:</strong> ${l.leaveType}</p>
+          <p><strong>Dates:</strong> ${l.startDate} → ${l.endDate}</p>
+          <p><strong>Days:</strong> ${l.numberOfDays}</p>
+          <p><strong>Reason:</strong> ${l.reason || '-'}</p>
+          <p style="font-size: 0.85rem; color: #6b7280;"><strong>Submitted:</strong> ${new Date(l.createdAt).toLocaleString()}</p>
+        </div>
+      </div>
+    `).join('');
+  }
 
-  /* ========== TABS ========== */
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
+  /* ========== TABS ========== */
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
 
-      const type = tab.dataset.tab;
-      if (type === 'balances') renderBalancesTable();
-      else renderLeavesTab(type);
-    });
-  });
+      const type = tab.dataset.tab;
+      if (type === 'balances') renderBalancesTable();
+      else renderLeavesTab(type);
+    });
+  });
 
-  /* ========== MODAL OPEN ========== */
-  document.addEventListener('click', async (e) => {
-    if (!e.target.classList.contains('btn-open-request')) return;
+  /* ========== MODAL OPEN ========== */
+  document.addEventListener('click', async (e) => {
+    if (!e.target.classList.contains('btn-open-request')) return;
 
-    const id = e.target.dataset.id;
-    const name = e.target.dataset.name;
-    const dept = e.target.dataset.dept;
-    const pos = e.target.dataset.pos;
+    const id = e.target.dataset.id;
+    const name = e.target.dataset.name;
+    const dept = e.target.dataset.dept;
+    const pos = e.target.dataset.pos;
 
-    employeeIdInput.value = id;
-    employeeNameInput.value = name;
-    departmentInput.value = dept;
-    positionInput.value = pos;
+    employeeIdInput.value = id;
+    employeeNameInput.value = name;
+    departmentInput.value = dept;
+    positionInput.value = pos;
 
-    const balance = await fetchLeaveBalance(id);
-    remainingBalance.textContent = balance;
+    const balance = await fetchLeaveBalance(id);
+    remainingBalance.textContent = `${balance} days`;
 
-    // Reset form fields that the user must enter
-    leaveTypeSelect.value = 'Vacation'; // default value
-    startDateInput.value = '';
-    endDateInput.value = '';
-    reasonInput.value = '';
+    leaveTypeSelect.value = 'Vacation';
+    startDateInput.value = '';
+    endDateInput.value = '';
+    reasonInput.value = '';
 
-    leaveModal.classList.add('show');
-  });
+    leaveModal.classList.add('show');
+  });
 
-  closeModal.addEventListener('click', () => leaveModal.classList.remove('show'));
-  cancelBtn.addEventListener('click', () => leaveModal.classList.remove('show'));
+  closeModal.addEventListener('click', () => leaveModal.classList.remove('show'));
+  cancelBtn.addEventListener('click', () => leaveModal.classList.remove('show'));
 
-  window.addEventListener('click', (e) => {
-    if (e.target === leaveModal) leaveModal.classList.remove('show');
-  });
+  window.addEventListener('click', (e) => {
+    if (e.target === leaveModal) leaveModal.classList.remove('show');
+  });
 
-  /* ========== SUBMIT LEAVE REQUEST ========== */
-  leaveForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  /* ========== SUBMIT LEAVE REQUEST ========== */
+  leaveForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    const employeeId = employeeIdInput.value.trim();
-    const leaveType = leaveTypeSelect.value;
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
-    const reason = reasonInput.value.trim();
+    const employeeId = employeeIdInput.value.trim();
+    const leaveType = leaveTypeSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    const reason = reasonInput.value.trim();
 
-    if (!startDate || !endDate || !reason) {
-      alert('Please fill all required fields (Start Date, End Date, and Reason).');
-      return;
-    }
+    if (!startDate || !endDate || !reason) {
+      alert('Please fill all required fields (Start Date, End Date, and Reason).');
+      return;
+    }
 
-    if (new Date(endDate) < new Date(startDate)) {
-      alert("End date cannot be earlier than start date.");
-      return;
-    }
+    if (new Date(endDate) < new Date(startDate)) {
+      alert("End date cannot be earlier than start date.");
+      return;
+    }
 
-    const success = await insertLeaveRequest({
-      employeeId,
-      leaveType,
-      startDate,
-      endDate,
-      reason
-    });
+    const success = await insertLeaveRequest({
+      employeeId,
+      leaveType,
+      startDate,
+      endDate,
+      reason
+    });
 
-    if (success) {
-      leaveModal.classList.remove('show');
-      
-      // Switch to the pending tab and re-render the list immediately
-      const pendingTab = document.querySelector('.tab[data-tab="pending"]');
-      if (pendingTab) {
-        tabs.forEach(t=>t.classList.remove('active'));
-        pendingTab.classList.add('active');
-        renderLeavesTab('pending');
-      } else {
-        renderLeavesTab('pending'); // Fallback
-      }
-      
-      // Also refresh the balance table (which is the default view) as a new entry was made
-      renderBalancesTable(); 
-    }
-  });
+    if (success) {
+      leaveModal.classList.remove('show');
+      
+      const pendingTab = document.querySelector('.tab[data-tab="pending"]');
+      if (pendingTab) {
+        tabs.forEach(t=>t.classList.remove('active'));
+        pendingTab.classList.add('active');
+        renderLeavesTab('pending');
+      } else {
+        renderLeavesTab('pending');
+      }
+      
+      renderBalancesTable(); 
+    }
+  });
 
-  /* ========== REALTIME UPDATES ========== */
-  supabase
-    .channel('leave-request-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
-      const activeTab = document.querySelector('.tab.active');
-      if (activeTab) {
-        const type = activeTab.dataset.tab;
-        if (type === 'balances') renderBalancesTable();
-        else renderLeavesTab(type);
-      }
-    })
-    .subscribe();
+  /* ========== REALTIME UPDATES ========== */
+  supabase
+    .channel('leave-request-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+      const activeTab = document.querySelector('.tab.active');
+      if (activeTab) {
+        const type = activeTab.dataset.tab;
+        if (type === 'balances') renderBalancesTable();
+        else renderLeavesTab(type);
+      }
+    })
+    .subscribe();
 
-  /* ========== INITIAL RENDER ========== */
-  renderBalancesTable();
+  // Also listen to balance changes
+  supabase
+    .channel('leave-balance-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_balances' }, () => {
+      const activeTab = document.querySelector('.tab.active');
+      if (activeTab && activeTab.dataset.tab === 'balances') {
+        renderBalancesTable();
+      }
+    })
+    .subscribe();
+
+  /* ========== INITIAL RENDER ========== */
+  renderBalancesTable();
 });

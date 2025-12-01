@@ -87,7 +87,7 @@
       </header>
 
       <section class="leave-list" id="leaveList">
-        <p class="no-leave">No pending leave requests</p>
+        <p class="no-leave">Loading...</p>
       </section>
     </main>
   </div>
@@ -176,6 +176,14 @@
     });
   </script>
 
+  <!-- CRITICAL: Load Supabase scripts in correct order -->
+  <!-- 1. Load Supabase CDN library first -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- 2. Load your Supabase configuration -->
+  <script src="../js/supabase-config.js"></script>
+  
+  <!-- 3. Load page-specific script last -->
   <script src="../js/leaverequest.js"></script>
 </body>
 </html>

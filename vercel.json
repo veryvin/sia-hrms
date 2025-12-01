@@ -1,0 +1,16 @@
+{
+  "buildCommand": "echo 'No build required'",
+  "outputDirectory": ".",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+};
+
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/html/index.html" }
+  ]
+};

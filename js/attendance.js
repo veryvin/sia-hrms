@@ -1,5 +1,5 @@
 /* ===============================
-   ATTENDANCE PAGE - SUPABASE READY
+   ATTENDANCE PAGE - SUPABASE READY (FIXED)
 ================================ */
 
 if (window.location.pathname.includes("attendance.html")) {
@@ -31,51 +31,101 @@ if (window.location.pathname.includes("attendance.html")) {
     const userId = loggedInUser.employee_id || '';
 
     /* ---------------------------
-       FETCH FROM SUPABASE
+       FETCH FROM SUPABASE - FIXED VERSION
     --------------------------- */
     async function fetchAttendanceRecords() {
         try {
-            const { data, error } = await supabase
+            console.log('🔍 Fetching attendance - NO JOINS');
+            
+            // Step 1: Get attendance records only
+            const { data: attendanceData, error: attError } = await supabase
                 .from('attendance')
-                .select(`
-                    id,
-                    employee_id,
-                    date,
-                    time_in,
-                    time_out,
-                    employees (
-                        employee_id,
-                        first_name,
-                        last_name,
-                        positions (
-                            position_name,
-                            departments (
-                                department_name
-                            )
-                        )
-                    )
-                `)
+                .select('id, employee_id, employee_uuid, date, time_in, time_out')
                 .order('date', { ascending: false })
                 .order('time_in', { ascending: false });
 
-            if (error) {
-                console.error('Supabase error:', error);
-                throw error;
+            if (attError) {
+                console.error('Attendance query error:', attError);
+                throw attError;
             }
 
-            console.log('Fetched attendance data:', data);
+            console.log('Attendance records fetched:', attendanceData?.length || 0);
 
-            // Transform to match current structure
-            return (data || []).map(record => {
-                // Handle the case where employees might be null or an array
-                const employee = Array.isArray(record.employees) ? record.employees[0] : record.employees;
-                
+            if (!attendanceData || attendanceData.length === 0) {
+                return [];
+            }
+
+            // Step 2: Get unique employee IDs (using employee_id string, not UUID)
+            const empIds = [...new Set(attendanceData.map(a => a.employee_id).filter(Boolean))];
+            
+            if (empIds.length === 0) {
+                console.warn('No valid employee IDs found in attendance');
+                return [];
+            }
+
+            // Step 3: Fetch employees by employee_id (not by UUID)
+            const { data: employees, error: empError } = await supabase
+                .from('employees')
+                .select('id, employee_id, first_name, last_name, position_id')
+                .in('employee_id', empIds);
+
+            if (empError) {
+                console.error('Employees query error:', empError);
+                throw empError;
+            }
+
+            // Step 4: Fetch positions
+            const posIds = [...new Set(employees.map(e => e.position_id).filter(Boolean))];
+            const { data: positions } = await supabase
+                .from('positions')
+                .select('id, position_name, department_id')
+                .in('id', posIds);
+
+            // Step 5: Fetch departments
+            const deptIds = [...new Set((positions || []).map(p => p.department_id).filter(Boolean))];
+            const { data: departments } = await supabase
+                .from('departments')
+                .select('id, department_name')
+                .in('id', deptIds);
+
+            // Build lookup maps
+            const deptMap = {};
+            (departments || []).forEach(d => {
+                deptMap[d.id] = d.department_name;
+            });
+
+            const posMap = {};
+            (positions || []).forEach(p => {
+                posMap[p.id] = {
+                    name: p.position_name,
+                    dept: deptMap[p.department_id] || '-'
+                };
+            });
+
+            const empMap = {};
+            employees.forEach(e => {
+                const pos = posMap[e.position_id] || { name: '-', dept: '-' };
+                empMap[e.employee_id] = {
+                    name: `${e.first_name} ${e.last_name}`,
+                    position: pos.name,
+                    department: pos.dept
+                };
+            });
+
+            // Transform to final format
+            return attendanceData.map(record => {
+                const emp = empMap[record.employee_id] || {
+                    name: 'Unknown',
+                    position: '-',
+                    department: '-'
+                };
+
                 return {
                     recordId: record.id,
                     id: record.employee_id,
-                    name: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
-                    department: employee?.positions?.departments?.department_name || '-',
-                    position: employee?.positions?.position_name || '-',
+                    name: emp.name,
+                    department: emp.department,
+                    position: emp.position,
                     date: record.date,
                     timeIn: formatTime(record.time_in),
                     timeOut: record.time_out ? formatTime(record.time_out) : '--',
@@ -83,9 +133,10 @@ if (window.location.pathname.includes("attendance.html")) {
                     timeOutRaw: record.time_out
                 };
             });
+
         } catch (error) {
-            console.error('Error fetching attendance:', error);
-            showAlert('Error loading attendance records: ' + error.message, 'error');
+            console.error('Error in fetchAttendanceRecords:', error);
+            showAlert('Error loading attendance: ' + error.message, 'error');
             return [];
         }
     }

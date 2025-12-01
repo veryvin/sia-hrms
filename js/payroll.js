@@ -1,227 +1,170 @@
 // ===================================================
-// AUTOMATED PAYROLL DASHBOARD WITH SUPABASE
+// ATTENDANCE-BASED PAYROLL SYSTEM - FIXED VERSION
+// Calculates payroll based on days present (not hours)
 // ===================================================
 
-const PayrollCalculator = {
-  parseTimeToSeconds: (timeStr) => {
-    if (!timeStr || timeStr === "--" || timeStr === null) return null;
-    const match = timeStr.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
-    if (!match) return null;
-
-    let hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-    const seconds = parseInt(match[3], 10);
-    const meridiem = match[4].toUpperCase();
-
-    if (meridiem === "AM") {
-      if (hours === 12) hours = 0;
-    } else {
-      if (hours !== 12) hours += 12;
-    }
-
-    return hours * 3600 + minutes * 60 + seconds;
-  },
-
-  calculateDailyHours: (timeIn, timeOut) => {
-    if (!timeIn || !timeOut) return 0;
-    
-    const inSeconds = PayrollCalculator.parseTimeToSeconds(timeIn);
-    const outSeconds = PayrollCalculator.parseTimeToSeconds(timeOut);
-    
-    if (inSeconds === null || outSeconds === null) return 0;
-
-    let diffSeconds = outSeconds - inSeconds;
-    if (diffSeconds < 0) diffSeconds += 24 * 3600;
-
-    return diffSeconds / 3600;
-  },
-
-  calculateRegularHours: (attendanceRecords) => {
-    let regularHours = 0;
-    attendanceRecords.forEach(record => {
-      const hoursWorked = PayrollCalculator.calculateDailyHours(record.timeIn, record.timeOut);
-      regularHours += Math.min(hoursWorked, 8);
-    });
-    return regularHours;
-  },
-
-  calculateOvertimeHours: (attendanceRecords) => {
-    let overtimeHours = 0;
-    attendanceRecords.forEach(record => {
-      const hoursWorked = PayrollCalculator.calculateDailyHours(record.timeIn, record.timeOut);
-      if (hoursWorked > 8) {
-        overtimeHours += hoursWorked - 8;
-      }
-    });
-    return overtimeHours;
-  },
-
-  calculateNightDifferentialHours: (attendanceRecords) => {
-    let nightHours = 0;
-    const nightStart = 22;
-    const nightEnd = 6;
-
-    attendanceRecords.forEach(record => {
-      if (!record.timeIn || !record.timeOut) return;
-
-      const inSeconds = PayrollCalculator.parseTimeToSeconds(record.timeIn);
-      const outSeconds = PayrollCalculator.parseTimeToSeconds(record.timeOut);
-      
-      if (inSeconds === null || outSeconds === null) return;
-
-      let currentSeconds = inSeconds;
-      const endSeconds = outSeconds > inSeconds ? outSeconds : outSeconds + 24 * 3600;
-
-      while (currentSeconds < endSeconds) {
-        const hour = Math.floor((currentSeconds % (24 * 3600)) / 3600);
-        if (hour >= nightStart || hour < nightEnd) {
-          nightHours += 1/3600;
-        }
-        currentSeconds += 1;
-      }
-    });
-
-    return nightHours;
-  },
-
-  calculateBasicPay: (monthlySalary, daysWorked, workingDaysInMonth = 22) => {
-    const dailyRate = monthlySalary / workingDaysInMonth;
-    return dailyRate * daysWorked;
-  },
-
-  calculateHourlyRate: (monthlySalary, workingDaysInMonth = 22, hoursPerDay = 8) => {
-    return monthlySalary / (workingDaysInMonth * hoursPerDay);
-  },
-
-  calculateOTPay: (hourlyRate, overtimeHours) => {
-    return overtimeHours * hourlyRate * 1.25;
-  },
-
-  calculateNightDiffPay: (hourlyRate, nightHours) => {
-    return nightHours * hourlyRate * 0.10;
-  },
-
-  calculateGrossPay: (basicPay, otPay, nightDiffPay, allowances = 0) => {
-    return basicPay + otPay + nightDiffPay + allowances;
-  },
-
-  calculateSSS: (grossPay) => {
-    return grossPay * 0.05;
-  },
-
-  calculatePhilHealth: (grossPay) => {
-    return grossPay * 0.025;
-  },
-
-  calculatePagIBIG: (grossPay) => {
-    if (grossPay <= 1500) return grossPay * 0.01;
-    if (grossPay <= 5000) return grossPay * 0.02;
-    return 100;
-  },
-
-  calculateWithholdingTax: (grossPay) => {
-    if (grossPay <= 20833) return 0;
-    if (grossPay <= 33332) return (grossPay - 20833) * 0.15;
-    if (grossPay <= 66666) return 1875 + (grossPay - 33332) * 0.20;
-    if (grossPay <= 166666) return 8541.80 + (grossPay - 66666) * 0.25;
-    if (grossPay <= 666666) return 33541.80 + (grossPay - 166666) * 0.30;
-    return 183541.80 + (grossPay - 666666) * 0.35;
-  }
-};
-
-// ===================================================
-// MAIN APPLICATION
-// ===================================================
 document.addEventListener("DOMContentLoaded", () => {
+  if (!window.supabaseClient) {
+    console.error("❌ Supabase client not found. Load supabase-config.js first.");
+    return;
+  }
   const supabase = window.supabaseClient;
+
+  // ==================== UI ELEMENTS ====================
   const periodSelect = document.getElementById("periodSelect");
   const tableBody = document.querySelector(".payroll-table tbody");
   const detailsModal = document.getElementById("detailsModal");
+  const detailsContent = document.getElementById("detailsContent");
   const closeDetailsModal = document.getElementById("closeDetailsModal");
   const closeDetailsBtn = document.getElementById("closeDetailsBtn");
   const printReceiptBtn = document.getElementById("printReceiptBtn");
-
-  // Hide the "+ Process Payroll" button
   const processBtn = document.getElementById("processBtn");
-  if (processBtn) {
-    processBtn.style.display = "none";
-  }
 
+  // Hide the top "Process Payroll" button
+  if (processBtn) processBtn.style.display = "none";
+
+  // ==================== STATE ====================
   let payrollRecords = [];
   let selectedPeriod = getCurrentPeriod();
 
-  // ===================================================
-  // GET CURRENT PERIOD
-  // ===================================================
+  // ==================== SIMPLIFIED PAYROLL CALCULATOR ====================
+  const PayrollCalculator = {
+    // Calculate basic pay based on days worked
+    calculateBasicPay: (monthlySalary, daysWorked, workingDaysInMonth = 22) => {
+      const dailyRate = monthlySalary / workingDaysInMonth;
+      return dailyRate * daysWorked;
+    },
+
+    // Calculate daily rate
+    calculateDailyRate: (monthlySalary, workingDaysInMonth = 22) => {
+      return monthlySalary / workingDaysInMonth;
+    },
+
+    // Philippine Deductions
+    calculateSSS: (grossPay) => {
+      // Simplified SSS calculation - 5% of gross
+      return grossPay * 0.05;
+    },
+
+    calculatePhilHealth: (grossPay) => {
+      // PhilHealth - 2.5% of gross (employee share)
+      return grossPay * 0.025;
+    },
+
+    calculatePagIBIG: (grossPay) => {
+      // Pag-IBIG contribution
+      if (grossPay <= 1500) return grossPay * 0.01;
+      if (grossPay <= 5000) return grossPay * 0.02;
+      return 100; // Maximum Pag-IBIG
+    },
+
+    calculateWithholdingTax: (grossPay) => {
+      // Simplified withholding tax (monthly basis)
+      if (grossPay <= 20833) return 0;
+      if (grossPay <= 33332) return (grossPay - 20833) * 0.15;
+      if (grossPay <= 66666) return 1875 + (grossPay - 33332) * 0.20;
+      if (grossPay <= 166666) return 8541.80 + (grossPay - 66666) * 0.25;
+      if (grossPay <= 666666) return 33541.80 + (grossPay - 166666) * 0.30;
+      return 183541.80 + (grossPay - 666666) * 0.35;
+    }
+  };
+
+  // ==================== PERIOD UTILITIES ====================
   function getCurrentPeriod() {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const firstDay = `${year}-${month}-01`;
     const lastDay = new Date(year, now.getMonth() + 1, 0);
-    const lastDayStr = `${year}-${month}-${String(lastDay.getDate()).padStart(2, '0')}`;
-    
+    const lastDayStr = `${year}-${month}-${String(lastDay.getDate()).padStart(2, "0")}`;
     return { start: firstDay, end: lastDayStr };
   }
 
-  // ===================================================
-  // FETCH DATA FROM SUPABASE
-  // ===================================================
+  function getPeriodFor(year, month) {
+    const monthStr = String(month).padStart(2, "0");
+    const firstDay = `${year}-${monthStr}-01`;
+    const lastDay = new Date(year, month, 0);
+    const lastDayStr = `${year}-${monthStr}-${String(lastDay.getDate()).padStart(2, "0")}`;
+    return { start: firstDay, end: lastDayStr };
+  }
+
+  function periodKeyFor(period) {
+    return `${period.start} → ${period.end}`;
+  }
+
+  // ==================== DATABASE QUERIES ====================
+  
   async function fetchAllEmployees() {
     try {
-      const { data, error } = await supabase.from('employees').select('*');
+      const { data, error } = await supabase
+        .from("employees")
+        .select("*");
+      
       if (error) throw error;
       return data || [];
-    } catch (error) {
-      console.error('Error fetching employees:', error);
+    } catch (err) {
+      console.error("❌ Error fetching employees:", err);
       return [];
     }
   }
 
-  async function fetchAttendanceRecords(employeeId, periodStart, periodEnd) {
+  // ✅ FIXED: Fetch attendance records for specific employee and period
+  async function fetchAttendanceForEmployee(employeeId, startDate, endDate) {
     try {
+      console.log(`🔍 Fetching attendance for employee ${employeeId} from ${startDate} to ${endDate}`);
+      
       const { data, error } = await supabase
-        .from('attendance_records')
-        .select('*')
-        .eq('id', employeeId)
-        .gte('date', periodStart)
-        .lte('date', periodEnd);
+        .from('attendance')
+        .select('id, employee_id, date, time_in, time_out')
+        .eq('employee_id', employeeId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Attendance query error:', error);
+        throw error;
+      }
+
+      console.log(`Found ${data?.length || 0} attendance records`);
+      return data || [];
       
-      if (error) throw error;
-      
-      // Filter out records with no timeOut
-      return (data || []).filter(r => r.timeOut && r.timeOut !== "--" && r.timeOut !== null);
     } catch (error) {
-      console.error('Error fetching attendance:', error);
+      console.error('Error in fetchAttendanceForEmployee:', error);
       return [];
     }
   }
 
-  async function fetchProcessedPayroll(employeeId, period) {
+  async function fetchPayrollForEmployeeAndPeriod(employeeUUID, period) {
     try {
       const { data, error } = await supabase
-        .from('payroll_records')
-        .select('*')
-        .eq('employeeNo', employeeId)
-        .eq('period', period)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error; // Ignore "not found" error
+        .from("payroll")
+        .select("*")
+        .eq("employee_id", employeeUUID)
+        .eq("pay_period_start", period.start)
+        .eq("pay_period_end", period.end)
+        .maybeSingle();
+
+      if (error && error.code !== "PGRST116") throw error;
       return data || null;
-    } catch (error) {
-      console.error('Error fetching payroll:', error);
+    } catch (err) {
+      console.error("❌ Error fetching payroll:", err);
       return null;
     }
   }
 
   async function fetchAllPayrollRecords() {
     try {
-      const { data, error } = await supabase.from('payroll_records').select('*');
+      const { data, error } = await supabase
+        .from("payroll")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
       if (error) throw error;
       payrollRecords = data || [];
       return payrollRecords;
-    } catch (error) {
-      console.error('Error fetching payroll records:', error);
+    } catch (err) {
+      console.error("❌ Error fetching payroll records:", err);
       payrollRecords = [];
       return [];
     }
@@ -230,19 +173,17 @@ document.addEventListener("DOMContentLoaded", () => {
   async function savePayrollRecord(record) {
     try {
       const { data, error } = await supabase
-        .from('payroll_records')
+        .from("payroll")
         .insert([record])
-        .select();
-      
+        .select()
+        .single();
+
       if (error) throw error;
-      
-      if (data && data.length > 0) {
-        payrollRecords.push(data[0]);
-      }
+      payrollRecords.push(data);
       return data;
-    } catch (error) {
-      console.error('Error saving payroll:', error);
-      alert('❌ Error saving payroll: ' + error.message);
+    } catch (err) {
+      console.error("❌ Error saving payroll:", err);
+      alert("❌ Error saving payroll: " + (err.message || err));
       return null;
     }
   }
@@ -250,42 +191,48 @@ document.addEventListener("DOMContentLoaded", () => {
   async function deletePayrollRecord(id) {
     try {
       const { error } = await supabase
-        .from('payroll_records')
+        .from("payroll")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
       
       if (error) throw error;
-      
       payrollRecords = payrollRecords.filter(p => p.id !== id);
-    } catch (error) {
-      console.error('Error deleting payroll:', error);
-      alert('❌ Error deleting payroll: ' + error.message);
+      return true;
+    } catch (err) {
+      console.error("❌ Error deleting payroll:", err);
+      alert("❌ Error deleting payroll: " + (err.message || err));
+      return false;
     }
   }
 
-  // ===================================================
-  // CALCULATE PAYROLL FOR EMPLOYEE
-  // ===================================================
+  // ==================== SIMPLIFIED PAYROLL CALCULATION ====================
   async function calculateEmployeePayroll(employee, periodStart, periodEnd) {
-    const attendanceRecords = await fetchAttendanceRecords(employee.empId, periodStart, periodEnd);
-    const monthlySalary = parseFloat(employee.basicSalary) || parseFloat(employee.monthlySalary) || 17000;
+    if (!employee || !employee.employee_id) return null;
 
-    if (attendanceRecords.length === 0) {
-      return null;
-    }
+    // Fetch attendance using employee_id (not UUID)
+    const attendanceRecords = await fetchAttendanceForEmployee(
+      employee.employee_id, 
+      periodStart, 
+      periodEnd
+    );
+    
+    const monthlySalary = parseFloat(employee.salary) || 17000;
 
-    const daysWorked = attendanceRecords.length;
-    const regularHours = PayrollCalculator.calculateRegularHours(attendanceRecords);
-    const overtimeHours = PayrollCalculator.calculateOvertimeHours(attendanceRecords);
-    const nightDiffHours = PayrollCalculator.calculateNightDifferentialHours(attendanceRecords);
+    console.log(`💰 Calculating payroll for ${employee.employee_id}:`, {
+      attendanceRecords: attendanceRecords.length,
+      monthlySalary,
+      period: `${periodStart} to ${periodEnd}`
+    });
 
-    const hourlyRate = PayrollCalculator.calculateHourlyRate(monthlySalary);
+    // Count days worked (unique dates with attendance)
+    const uniqueDates = new Set(attendanceRecords.map(r => r.date));
+    const daysWorked = uniqueDates.size;
+    
+    // Calculate pay based on daily rate × days present
     const basicPay = PayrollCalculator.calculateBasicPay(monthlySalary, daysWorked);
-    const otPay = PayrollCalculator.calculateOTPay(hourlyRate, overtimeHours);
-    const nightDiffPay = PayrollCalculator.calculateNightDiffPay(hourlyRate, nightDiffHours);
+    const grossPay = basicPay;
 
-    const grossPay = PayrollCalculator.calculateGrossPay(basicPay, otPay, nightDiffPay);
-
+    // Calculate deductions
     const sss = PayrollCalculator.calculateSSS(grossPay);
     const philHealth = PayrollCalculator.calculatePhilHealth(grossPay);
     const pagibig = PayrollCalculator.calculatePagIBIG(grossPay);
@@ -296,58 +243,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return {
       daysWorked,
-      regularHours: regularHours.toFixed(2),
-      overtimeHours: overtimeHours.toFixed(2),
-      nightDiffHours: nightDiffHours.toFixed(2),
-      basicPay,
-      otPay,
-      nightDiffPay,
-      grossPay,
-      sss,
-      philHealth,
-      pagibig,
-      wtax,
-      totalDeductions,
-      netPay
+      dailyRate: Number(PayrollCalculator.calculateDailyRate(monthlySalary).toFixed(2)),
+      basicPay: Number(basicPay.toFixed(2)),
+      grossPay: Number(grossPay.toFixed(2)),
+      sss: Number(sss.toFixed(2)),
+      philHealth: Number(philHealth.toFixed(2)),
+      pagibig: Number(pagibig.toFixed(2)),
+      wtax: Number(wtax.toFixed(2)),
+      totalDeductions: Number(totalDeductions.toFixed(2)),
+      netPay: Number(netPay.toFixed(2))
     };
   }
 
-  // ===================================================
-  // RENDER TABLE
-  // ===================================================
+  // ==================== GET POSITION NAME ====================
+  async function getPositionName(positionId) {
+    if (!positionId) return "N/A";
+    try {
+      const { data, error } = await supabase
+        .from("positions")
+        .select("position_name")
+        .eq("id", positionId)
+        .single();
+      
+      if (error) return "N/A";
+      return data?.position_name || "N/A";
+    } catch (err) {
+      return "N/A";
+    }
+  }
+
+  // ==================== UI RENDERING ====================
   async function renderEmployeeTable() {
-    tableBody.innerHTML = '<tr><td colspan="9" class="empty">Loading...</td></tr>';
-    
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="9" class="empty">⏳ Loading...</td></tr>';
+
     const employees = await fetchAllEmployees();
-    
-    if (employees.length === 0) {
+    if (!employees || employees.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="9" class="empty">No employees found</td></tr>`;
       updateSummaryCards();
       return;
     }
 
-    const periodKey = `${selectedPeriod.start} → ${selectedPeriod.end}`;
+    const period = selectedPeriod;
+    const periodLabel = periodKeyFor(period);
     const rows = [];
 
+    await fetchAllPayrollRecords();
+
     for (const emp of employees) {
-      const processed = await fetchProcessedPayroll(emp.empId, periodKey);
-      const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+      const processed = payrollRecords.find(p => 
+        p.employee_id === emp.id && 
+        p.pay_period_start === period.start &&
+        p.pay_period_end === period.end
+      );
+      
+      const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+      const positionName = await getPositionName(emp.position_id);
 
       if (processed) {
         rows.push(`
           <tr>
-            <td>${emp.empId}</td>
+            <td>${emp.employee_id || ""}</td>
             <td>${fullName}</td>
-            <td>${emp.position || 'N/A'}</td>
-            <td>${emp.empStatus || 'N/A'}</td>
-            <td>${periodKey}</td>
-            <td>₱${processed.grossPay.toLocaleString("en-PH", {minimumFractionDigits:2})}</td>
-            <td>₱${processed.totalDeductions.toLocaleString("en-PH", {minimumFractionDigits:2})}</td>
-            <td>₱${processed.netPay.toLocaleString("en-PH", {minimumFractionDigits:2})}</td>
+            <td>${positionName}</td>
+            <td>${emp.employment_status || "N/A"}</td>
+            <td>${periodLabel}</td>
+            <td>₱${Number(processed.base_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</td>
+            <td>₱${Number(processed.deductions || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</td>
+            <td>₱${Number(processed.net_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</td>
             <td>
-              <div class="action-buttons">
-                <button class="view-btn" onclick="showPayrollDetails(${processed.id})">👁 View</button>
-                <button class="delete-btn" onclick="deletePayroll(${processed.id})">🗑 Delete</button>
+              <div class="action-buttons" style="display:flex;gap:8px;">
+                <button class="view-btn" onclick="showPayrollDetails('${processed.id}')" style="padding:6px 12px;background:#3b82f6;color:white;border:none;border-radius:4px;cursor:pointer;">👁 View</button>
+                <button class="delete-btn" onclick="deletePayroll('${processed.id}')" style="padding:6px 12px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">🗑 Delete</button>
               </div>
             </td>
           </tr>
@@ -355,19 +322,19 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         rows.push(`
           <tr>
-            <td>${emp.empId}</td>
+            <td>${emp.employee_id || ""}</td>
             <td>${fullName}</td>
-            <td>${emp.position || 'N/A'}</td>
-            <td>${emp.empStatus || 'N/A'}</td>
-            <td>${periodKey}</td>
+            <td>${positionName}</td>
+            <td>${emp.employment_status || "N/A"}</td>
+            <td>${periodLabel}</td>
             <td class="empty">—</td>
             <td class="empty">—</td>
             <td class="empty">—</td>
             <td>
               <button 
                 class="btn-green" 
-                onclick="processEmployeePayroll('${emp.empId}')"
-                style="padding:6px 12px;font-size:13px;"
+                onclick="processEmployeePayroll('${emp.id}')"
+                style="padding: 8px 16px; font-size: 13px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;"
               >
                 💼 Process Payroll
               </button>
@@ -381,120 +348,165 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSummaryCards();
   }
 
-  // ===================================================
-  // PROCESS PAYROLL FOR EMPLOYEE
-  // ===================================================
-  window.processEmployeePayroll = async function(empId) {
+  // ==================== PROCESS PAYROLL ====================
+  window.processEmployeePayroll = async function(employeeUUID) {
     const employees = await fetchAllEmployees();
-    const employee = employees.find(e => e.empId === empId);
-
+    const employee = employees.find(e => e.id === employeeUUID);
+    
     if (!employee) {
       alert("❌ Employee not found!");
       return;
     }
 
-    const calculation = await calculateEmployeePayroll(employee, selectedPeriod.start, selectedPeriod.end);
+    console.log("🔍 DEBUGGING PAYROLL PROCESS:");
+    console.log("Employee Object:", employee);
+    console.log("Employee UUID:", employee.id);
+    console.log("Employee Number:", employee.employee_id);
 
-    if (!calculation) {
-      alert(`⚠️ No attendance records found for ${employee.firstName} ${employee.lastName} in this period.`);
+    const period = selectedPeriod;
+    console.log("Period:", period);
+
+    // Check if already processed
+    const already = await fetchPayrollForEmployeeAndPeriod(employee.id, period);
+    if (already) {
+      alert("⚠️ Payroll already processed for this employee in this period.");
       return;
     }
 
-    const confirmMsg = `📊 PAYROLL SUMMARY for ${employee.firstName} ${employee.lastName}\n\n` +
-          `Period: ${selectedPeriod.start} to ${selectedPeriod.end}\n` +
-          `Days Worked: ${calculation.daysWorked}\n` +
-          `Regular Hours: ${calculation.regularHours} hrs\n` +
-          `Overtime: ${calculation.overtimeHours} hrs\n` +
-          `Night Diff: ${calculation.nightDiffHours} hrs\n\n` +
-          `💰 GROSS PAY: ₱${calculation.grossPay.toLocaleString('en-PH', {minimumFractionDigits:2})}\n` +
-          `📉 DEDUCTIONS: ₱${calculation.totalDeductions.toLocaleString('en-PH', {minimumFractionDigits:2})}\n` +
-          `💵 NET PAY: ₱${calculation.netPay.toLocaleString('en-PH', {minimumFractionDigits:2})}\n\n` +
-          `Process this payroll?`;
+    // Calculate payroll (will work even with 0 attendance)
+    const calculation = await calculateEmployeePayroll(employee, period.start, period.end);
+
+    if (!calculation) {
+      alert(`❌ Error calculating payroll for ${employee.first_name} ${employee.last_name}.`);
+      return;
+    }
+
+    console.log("💰 Calculation Result:", calculation);
+
+    // Show confirmation with attendance warning if needed
+    let confirmMsg = 
+      `📊 PAYROLL SUMMARY\n\n` +
+      `Employee ID: ${employee.employee_id}\n` +
+      `Employee Name: ${employee.first_name} ${employee.last_name}\n\n` +
+      `Period: ${period.start} to ${period.end}\n` +
+      `Days Present: ${calculation.daysWorked} days\n` +
+      `Daily Rate: ₱${calculation.dailyRate.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n\n`;
+
+    if (calculation.daysWorked === 0) {
+      confirmMsg += `⚠️ WARNING: No attendance records found!\n`;
+      confirmMsg += `This will result in ZERO pay.\n\n`;
+    }
+
+    confirmMsg +=
+      `💰 GROSS PAY: ₱${calculation.grossPay.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
+      `📉 DEDUCTIONS: ₱${calculation.totalDeductions.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
+      `   • SSS: ₱${calculation.sss.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
+      `   • PhilHealth: ₱${calculation.philHealth.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
+      `   • Pag-IBIG: ₱${calculation.pagibig.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
+      `   • Tax: ₱${calculation.wtax.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n` +
+      `💵 NET PAY: ₱${calculation.netPay.toLocaleString('en-PH', {minimumFractionDigits: 2})}\n\n` +
+      `Process this payroll?`;
 
     if (!confirm(confirmMsg)) return;
 
+    // Save to database
     const newRecord = {
-      employeeNo: employee.empId,
-      employeeStatus: employee.empStatus || 'Regular',
-      employeePosition: employee.position || 'N/A',
-      employee: `${employee.firstName} ${employee.lastName}`,
-      period: `${selectedPeriod.start} → ${selectedPeriod.end}`,
-      daysWorked: calculation.daysWorked,
-      regularHours: calculation.regularHours,
-      overtimeHours: calculation.overtimeHours,
-      nightDiffHours: calculation.nightDiffHours,
-      basicSalary: calculation.basicPay,
-      otPay: calculation.otPay,
-      nightDiffPay: calculation.nightDiffPay,
-      grossPay: calculation.grossPay,
-      sss: calculation.sss,
-      philHealth: calculation.philHealth,
-      pagibig: calculation.pagibig,
-      withholdingTax: calculation.wtax,
-      totalDeductions: calculation.totalDeductions,
-      netPay: calculation.netPay,
+      employee_id: employee.id,
+      pay_period_start: period.start,
+      pay_period_end: period.end,
+      base_pay: calculation.grossPay,
+      overtime_pay: 0,
+      bonus: 0,
+      deductions: calculation.totalDeductions,
+      tax: calculation.wtax,
+      net_pay: calculation.netPay,
+      payment_date: new Date().toISOString().split("T")[0],
       status: "Processed",
-      processedDate: new Date().toLocaleDateString()
+      created_at: new Date().toISOString()
     };
 
-    const result = await savePayrollRecord(newRecord);
-    if (result) {
+    const saved = await savePayrollRecord(newRecord);
+    if (saved) {
       alert("✅ Payroll processed successfully!");
+      await fetchAllPayrollRecords();
       await renderEmployeeTable();
     }
   };
 
-  // ===================================================
-  // DELETE PAYROLL
-  // ===================================================
+  // ==================== DELETE PAYROLL ====================
   window.deletePayroll = async function(id) {
-    if (!confirm("Are you sure you want to delete this payroll record?")) return;
-
-    await deletePayrollRecord(id);
-    alert("✅ Payroll record deleted!");
-    await renderEmployeeTable();
+    if (!confirm("⚠️ Are you sure you want to delete this payroll record?")) return;
+    
+    const ok = await deletePayrollRecord(id);
+    if (ok) {
+      alert("✅ Payroll record deleted!");
+      await renderEmployeeTable();
+    }
   };
 
-  // ===================================================
-  // VIEW PAYROLL DETAILS
-  // ===================================================
-  window.showPayrollDetails = function(id) {
+  // ==================== VIEW DETAILS ====================
+  window.showPayrollDetails = async function(id) {
     const p = payrollRecords.find(x => x.id === id);
-    if (!p) return;
+    if (!p || !detailsModal || !detailsContent) return;
 
-    document.getElementById("detailsContent").innerHTML = `
-      <div class="detail-row"><strong>Employee No:</strong> <span>${p.employeeNo}</span></div>
-      <div class="detail-row"><strong>Name:</strong> <span>${p.employee}</span></div>
-      <div class="detail-row"><strong>Position:</strong> <span>${p.employeePosition}</span></div>
-      <div class="detail-row"><strong>Status:</strong> <span>${p.employeeStatus}</span></div>
-      <div class="detail-row"><strong>Period:</strong> <span>${p.period}</span></div>
-      <div class="detail-row"><strong>Processed Date:</strong> <span>${p.processedDate}</span></div>
-      <hr>
-      <div class="detail-row"><strong>Days Worked:</strong> ${p.daysWorked}</div>
-      <div class="detail-row"><strong>Regular Hours:</strong> ${p.regularHours} hrs</div>
-      <div class="detail-row"><strong>Overtime Hours:</strong> ${p.overtimeHours} hrs</div>
-      <div class="detail-row"><strong>Night Diff Hours:</strong> ${p.nightDiffHours} hrs</div>
-      <hr>
-      <div class="detail-row"><strong>Basic Pay:</strong> ₱${p.basicSalary.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <div class="detail-row"><strong>Overtime Pay:</strong> ₱${p.otPay.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <div class="detail-row"><strong>Night Differential:</strong> ₱${p.nightDiffPay.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <hr>
-      <div class="detail-row"><strong>GROSS PAY:</strong> <strong>₱${p.grossPay.toLocaleString("en-PH",{minimumFractionDigits:2})}</strong></div>
-      <hr>
-      <div class="detail-row"><strong>SSS (5%):</strong> ₱${p.sss.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <div class="detail-row"><strong>PhilHealth (2.5%):</strong> ₱${p.philHealth.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <div class="detail-row"><strong>Pag-IBIG:</strong> ₱${p.pagibig.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <div class="detail-row"><strong>Withholding Tax:</strong> ₱${p.withholdingTax.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <div class="detail-row"><strong>Total Deductions:</strong> ₱${p.totalDeductions.toLocaleString("en-PH",{minimumFractionDigits:2})}</div>
-      <hr>
-      <div class="detail-row"><strong>NET PAY:</strong> <span style="color:green;font-weight:bold;font-size:1.3em">₱${p.netPay.toLocaleString("en-PH",{minimumFractionDigits:2})}</span></div>
+    const employees = await fetchAllEmployees();
+    const emp = employees.find(e => e.id === p.employee_id);
+    const empName = emp ? `${emp.first_name} ${emp.last_name}` : "N/A";
+    const empNo = emp ? emp.employee_id : "N/A";
+
+    // Fetch attendance to get days worked
+    const attendanceRecords = await fetchAttendanceForEmployee(
+      empNo,
+      p.pay_period_start, 
+      p.pay_period_end
+    );
+    const uniqueDates = new Set(attendanceRecords.map(r => r.date));
+    const daysWorked = uniqueDates.size;
+
+    detailsContent.innerHTML = `
+      <div style="padding:20px;">
+        <div style="margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #e5e7eb;">
+          <h3 style="margin:0 0 10px 0;color:#1f2937;">Payroll Receipt</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14px;">
+            <div><strong>Employee No:</strong> ${empNo}</div>
+            <div><strong>Employee Name:</strong> ${empName}</div>
+            <div><strong>Period:</strong> ${p.pay_period_start} to ${p.pay_period_end}</div>
+            <div><strong>Days Worked:</strong> ${daysWorked} days</div>
+            <div><strong>Processed Date:</strong> ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ""}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <h4 style="margin:0 0 10px 0;color:#059669;">Earnings</h4>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px;">
+            <div>Base Pay (${daysWorked} days):</div>
+            <div style="text-align:right;">₱${Number(p.base_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #e5e7eb;">
+          <h4 style="margin:0 0 10px 0;color:#dc2626;">Deductions</h4>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px;">
+            <div>Withholding Tax:</div>
+            <div style="text-align:right;">₱${Number(p.tax || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</div>
+            <div><strong>Total Deductions:</strong></div>
+            <div style="text-align:right;"><strong>₱${Number(p.deductions || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</strong></div>
+          </div>
+        </div>
+
+        <div style="background:#f0fdf4;padding:15px;border-radius:8px;border:2px solid #10b981;">
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;">
+            <div style="font-size:18px;font-weight:bold;color:#065f46;">NET PAY:</div>
+            <div style="font-size:24px;font-weight:bold;color:#059669;">₱${Number(p.net_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</div>
+          </div>
+        </div>
+      </div>
     `;
+    
     detailsModal.style.display = "flex";
   };
 
-  // ===================================================
-  // MODAL CONTROLS
-  // ===================================================
+  // ==================== MODAL CONTROLS ====================
   closeDetailsModal?.addEventListener("click", () => detailsModal.style.display = "none");
   closeDetailsBtn?.addEventListener("click", () => detailsModal.style.display = "none");
   window.addEventListener("click", (e) => {
@@ -502,61 +514,78 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   printReceiptBtn?.addEventListener("click", () => window.print());
 
-  // ===================================================
-  // SUMMARY CARDS
-  // ===================================================
+  // ==================== SUMMARY CARDS ====================
   async function updateSummaryCards() {
     let totalPayroll = 0;
     let totalDeductions = 0;
     let processedCount = 0;
-
-    const periodKey = `${selectedPeriod.start} → ${selectedPeriod.end}`;
+    const period = selectedPeriod;
 
     payrollRecords.forEach(p => {
-      if (p.period === periodKey) {
-        totalPayroll += p.grossPay;
-        totalDeductions += p.totalDeductions;
+      if (p.pay_period_start === period.start && p.pay_period_end === period.end) {
+        totalPayroll += Number(p.base_pay || 0);
+        totalDeductions += Number(p.deductions || 0);
         processedCount++;
       }
     });
 
     if (document.getElementById("totalPayroll")) {
-      document.getElementById("totalPayroll").textContent = "₱" + totalPayroll.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+      document.getElementById("totalPayroll").textContent = 
+        "₱" + totalPayroll.toLocaleString("en-PH", { minimumFractionDigits: 2 });
     }
     if (document.getElementById("totalDeductions")) {
-      document.getElementById("totalDeductions").textContent = "₱" + totalDeductions.toLocaleString("en-PH", { minimumFractionDigits: 2 });
+      document.getElementById("totalDeductions").textContent = 
+        "₱" + totalDeductions.toLocaleString("en-PH", { minimumFractionDigits: 2 });
     }
     if (document.getElementById("processedCount")) {
       document.getElementById("processedCount").textContent = processedCount;
     }
   }
 
-  // ===================================================
-  // PERIOD FILTER
-  // ===================================================
+  // ==================== PERIOD SELECT ====================
   if (periodSelect) {
+    const periods = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const period = getPeriodFor(year, month);
+      const monthName = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+      periods.push({ period, label: monthName });
+    }
+
+    periodSelect.innerHTML = periods.map((p, idx) => 
+      `<option value="${idx}">${p.label} (${p.period.start} to ${p.period.end})</option>`
+    ).join('');
+
     periodSelect.addEventListener("change", async (e) => {
-      if (e.target.value !== "All Periods") {
-        // Add period filtering logic here
-      }
+      const idx = parseInt(e.target.value);
+      selectedPeriod = periods[idx].period;
+      console.log("Selected period:", selectedPeriod);
       await renderEmployeeTable();
     });
+
+    selectedPeriod = periods[0].period;
   }
 
-  // ===================================================
-  // INITIALIZE
-  // ===================================================
+  // ==================== INITIALIZATION ====================
   (async function init() {
+    console.log("🚀 Initializing attendance-based payroll system...");
     await fetchAllPayrollRecords();
     await renderEmployeeTable();
+    console.log("✅ Payroll system ready!");
   })();
 
-  // ===================================================
-  // REALTIME SUBSCRIPTION
-  // ===================================================
+  // ==================== REALTIME SUBSCRIPTION ====================
   supabase
-    .channel('payroll-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_records' }, async () => {
+    .channel("payroll-changes")
+    .on("postgres_changes", { 
+      event: "*", 
+      schema: "public", 
+      table: "payroll" 
+    }, async () => {
+      console.log("🔄 Payroll data changed, refreshing...");
       await fetchAllPayrollRecords();
       await renderEmployeeTable();
     })

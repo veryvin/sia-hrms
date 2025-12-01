@@ -1,24 +1,12 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/",
-      "dest": "/html/index.html"
+      "source": "/",
+      "destination": "/public/html/index.html"
     },
     {
-      "src": "/css/(.*)",
-      "dest": "/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/js/$1"
-    },
-    {
-      "src": "/images/(.*)",
-      "dest": "/images/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/(.*)",
+      "destination": "/public/$1"
     }
   ]
 }

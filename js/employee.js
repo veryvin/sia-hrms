@@ -348,7 +348,9 @@
 if (isAddPage) {
   const form = qs('employeeForm');
   const cancelBtn = qs('cancelAdd');
-  const positionSelect = qs('position');
+  
+  // Fix: Use correct ID "Position" (capital P) from your HTML
+  const positionSelect = qs('Position');  // Changed from 'position' to 'Position'
   const salaryInput = qs('salary');
   
   if (!form) return;
@@ -356,52 +358,61 @@ if (isAddPage) {
   // Salary mapping based on position
   const positionSalaryMap = {
     'Employee': 15000.00,
-    'Porter': 15000.00,
-    'Driver': 18000.00,
-    'Dispatcher': 17000.00,
-    'Sales Representative': 20000.00,
-    'HR': 25000.00,
     'Manager': 35000.00,
-    'HR Manager': 35000.00
+    'HR Manager': 35000.00,
+    'Driver': 18000.00,
+    'Dispatcher': 17000.00
   };
 
-  // Add event listener to position select
-  if (positionSelect && salaryInput) {
+    if (positionSelect && salaryInput) {
     positionSelect.addEventListener('change', function() {
       const selectedPosition = this.value;
+      
+      console.log('Position selected:', selectedPosition); // Debug log
       
       // Check if position exists in our mapping
       if (positionSalaryMap.hasOwnProperty(selectedPosition)) {
         salaryInput.value = positionSalaryMap[selectedPosition].toFixed(2);
         
-        // Optional: Add visual feedback
-        salaryInput.style.backgroundColor = '#e8f5e9';
+        // Visual feedback - brief green highlight
+        salaryInput.style.backgroundColor = '#d4edda';
+        salaryInput.style.transition = 'background-color 0.3s ease';
+        
         setTimeout(() => {
-          salaryInput.style.backgroundColor = '';
+          salaryInput.style.backgroundColor = '#f5f5f5';
         }, 500);
+        
+        console.log('Salary set to:', salaryInput.value); // Debug log
       } else {
         // Default salary for unlisted positions
         salaryInput.value = '15000.00';
+        console.log('Using default salary'); // Debug log
       }
     });
+  } else {
+    console.error('Position select or salary input not found!');
+    console.log('Position element:', positionSelect);
+    console.log('Salary element:', salaryInput);
   }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
 
-      // Validate required fields
-      const requiredFields = ['empId', 'empEmail', 'firstName', 'lastName', 'dob', 'gender', 'phone', 'address', 'position', 'department', 'dateHired', 'status', 'salary'];
-      let isValid = true;
-      
-      for (const fieldId of requiredFields) {
-        const field = qs(fieldId);
-        if (!field || !field.value.trim()) {
-          alert(`Please fill in the ${fieldId} field`);
-          field && field.focus();
-          isValid = false;
-          break;
-        }
+  // Rest of your form submit handler...
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Validate required fields
+    const requiredFields = ['empId', 'empEmail', 'firstName', 'lastName', 'dob', 'gender', 'phone', 'address', 'Position', 'department', 'dateHired', 'status', 'salary'];
+    let isValid = true;
+    
+    for (const fieldId of requiredFields) {
+      const field = qs(fieldId);
+      if (!field || !field.value.trim()) {
+        alert(`Please fill in the ${fieldId} field`);
+        field && field.focus();
+        isValid = false;
+        break;
       }
+    }
 
       if (!isValid) return;
 

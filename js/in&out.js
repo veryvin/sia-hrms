@@ -169,7 +169,7 @@ function formatTimeFromISO(isoString) {
 function showLoginModal() {
     document.getElementById('loginModal').classList.add('show');
     document.getElementById('clockModal').classList.remove('show');
-}
+} 
 
 async function showClockModal(empId) {
     const employee = await getEmployeeById(empId);

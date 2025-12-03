@@ -1,4 +1,4 @@
-// ==================== TIME TRACKER - FIXED DATE HANDLING ====================
+// ==================== TIME TRACKER - NO LOGIN REQUIRED ====================
 
 // Safety check for Supabase
 if (!window.supabaseClient) {
@@ -166,39 +166,8 @@ function formatTimeFromISO(isoString) {
 
 // ==================== MODAL MANAGEMENT ====================
 
-function showLoginModal() {
-    document.getElementById('loginModal').classList.add('show');
-    document.getElementById('clockModal').classList.remove('show');
-} 
-
-async function showClockModal(empId) {
-    const employee = await getEmployeeById(empId);
-    
-    if (!employee) {
-        showAlert('Employee ID not found', 'error', 'alertBox');
-        return;
-    }
-
-    currentEmployee = employee;
-
-    const fullName = `${employee.firstName} ${employee.lastName}`;
-    const position = employee.position;
-    const department = employee.department;
-    const photo = employee.photo || createInitialAvatar(employee.firstName, employee.lastName);
-
-    document.getElementById('profileImg').src = photo;
-    document.getElementById('displayName').textContent = fullName;
-    document.getElementById('displayPosition').textContent = position;
-    document.getElementById('displayId').textContent = employee.empId;
-
-    document.getElementById('detailId').textContent = employee.empId;
-    document.getElementById('detailName').textContent = fullName;
-    document.getElementById('detailPosition').textContent = position;
-    document.getElementById('detailDept').textContent = department;
-
-    await refreshRecordsDisplay();
-
-    document.getElementById('loginModal').classList.remove('show');
+function showClockModal() {
+    document.getElementById('loginModal').style.display = 'none';
     document.getElementById('clockModal').classList.add('show');
 }
 
@@ -224,7 +193,15 @@ function createInitialAvatar(firstName, lastName) {
 // ==================== UI UPDATES ====================
 
 async function refreshRecordsDisplay() {
-    if (!currentEmployee) return;
+    if (!currentEmployee) {
+        // Clear display when no employee
+        document.querySelector('.records-grid').innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999;">
+                Enter Employee ID to view records
+            </div>
+        `;
+        return;
+    }
     
     const records = await getAllTodayRecords(currentEmployee.empId);
     const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
@@ -312,7 +289,7 @@ function showAlert(message, type = 'success', alertId = 'alertBox2') {
 
 async function handleTimeIn() {
     if (!currentEmployee) {
-        showAlert('No employee logged in', 'error');
+        showAlert('No employee loaded. Please enter Employee ID first.', 'error');
         return;
     }
 
@@ -365,7 +342,7 @@ async function handleTimeIn() {
 
 async function handleTimeOut() {
     if (!currentEmployee) {
-        showAlert('No employee logged in', 'error');
+        showAlert('No employee loaded. Please enter Employee ID first.', 'error');
         return;
     }
 
@@ -438,6 +415,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout = document.getElementById("btnLogout");
     const btnClockInOut = document.getElementById("btnClockInOut");
 
+    // Show clock interface immediately (NO LOGIN REQUIRED)
+    showClockModal();
+    
+    // Update instruction text
+    const instructionText = document.querySelector('.login-modal p');
+    if (instructionText) {
+        instructionText.textContent = 'Enter Employee ID to clock in/out';
+    }
+
+    // Set default display
+    document.getElementById('displayName').textContent = '--';
+    document.getElementById('displayPosition').textContent = '--';
+    document.getElementById('displayId').textContent = '--';
+    document.getElementById('detailId').textContent = '--';
+    document.getElementById('detailName').textContent = '--';
+    document.getElementById('detailPosition').textContent = '--';
+    document.getElementById('detailDept').textContent = '--';
+
     btnLogin.addEventListener('click', async () => {
         const empId = inputEmpId.value.trim();
         
@@ -453,8 +448,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        await showClockModal(empId);
+        // Set current employee and update display
+        currentEmployee = employee;
+        const fullName = `${employee.firstName} ${employee.lastName}`;
+        const photo = employee.photo || createInitialAvatar(employee.firstName, employee.lastName);
+
+        document.getElementById('profileImg').src = photo;
+        document.getElementById('displayName').textContent = fullName;
+        document.getElementById('displayPosition').textContent = employee.position;
+        document.getElementById('displayId').textContent = employee.empId;
+
+        document.getElementById('detailId').textContent = employee.empId;
+        document.getElementById('detailName').textContent = fullName;
+        document.getElementById('detailPosition').textContent = employee.position;
+        document.getElementById('detailDept').textContent = employee.department;
+
+        await refreshRecordsDisplay();
         inputEmpId.value = '';
+        showAlert(`✅ Employee loaded: ${fullName}`, 'success', 'alertBox2');
     });
 
     inputEmpId.addEventListener('keypress', (e) => {
@@ -465,11 +476,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnLogout.addEventListener('click', () => {
         currentEmployee = null;
-        showLoginModal();
+        
+        // Clear employee display
+        document.getElementById('displayName').textContent = '--';
+        document.getElementById('displayPosition').textContent = '--';
+        document.getElementById('displayId').textContent = '--';
+        
+        // Clear details
+        document.getElementById('detailId').textContent = '--';
+        document.getElementById('detailName').textContent = '--';
+        document.getElementById('detailPosition').textContent = '--';
+        document.getElementById('detailDept').textContent = '--';
+        
+        // Clear records
+        document.querySelector('.records-grid').innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999;">
+                Enter Employee ID to view records
+            </div>
+        `;
+        
+        // Reset button
+        const btn = document.getElementById('btnClockInOut');
+        btn.innerHTML = '<span class="icon">🟢</span> CLOCK IN';
+        btn.style.background = '#27ae60';
+        
+        showAlert('Employee cleared. Enter new ID to continue.', 'success', 'alertBox2');
+        
+        // Focus back to input
+        inputEmpId.focus();
     });
 
     btnClockInOut.addEventListener('click', async () => {
-        if (!currentEmployee) return;
+        if (!currentEmployee) {
+            showAlert('Please enter Employee ID first', 'warning', 'alertBox2');
+            inputEmpId.focus();
+            return;
+        }
         
         // Check if there's an active record (no time_out)
         const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
@@ -484,11 +526,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     startClock();
-    showLoginModal();
+    
+    // Initial display refresh
+    refreshRecordsDisplay();
     
     // Auto-refresh records every 30 seconds if logged in
     setInterval(async () => {
-        if (currentEmployee && document.getElementById('clockModal').classList.contains('show')) {
+        if (currentEmployee) {
             await refreshRecordsDisplay();
         }
     }, 30000);

@@ -1,11 +1,10 @@
 /* ===============================
-   ATTENDANCE PAGE - SUPABASE READY (FIXED)
+   ATTENDANCE PAGE - EMPLOYEE RESTRICTED VIEW
 ================================ */
 
 if (window.location.pathname.includes("attendance.html")) {
     const supabase = window.supabaseClient;
     
-    // Check if Supabase is loaded
     if (!supabase) {
         console.error('Supabase client not initialized!');
         alert('Database connection error. Please refresh the page.');
@@ -28,21 +27,37 @@ if (window.location.pathname.includes("attendance.html")) {
     // Get logged in user info
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
     const userRole = loggedInUser.role || 'Employee';
-    const userId = loggedInUser.employee_id || '';
+    const userId = loggedInUser.empId || loggedInUser.employee_id || '';
+    const userPosition = loggedInUser.position || '';
+
+    console.log('🔍 User Role:', userRole);
+    console.log('🔍 User ID:', userId);
+    console.log('🔍 User Position:', userPosition);
 
     /* ---------------------------
-       FETCH FROM SUPABASE - FIXED VERSION
+       FETCH FROM SUPABASE
     --------------------------- */
     async function fetchAttendanceRecords() {
         try {
-            console.log('🔍 Fetching attendance - NO JOINS');
+            console.log('🔍 Fetching attendance records');
             
-            // Step 1: Get attendance records only
-            const { data: attendanceData, error: attError } = await supabase
+            // Build query based on role
+            let query = supabase
                 .from('attendance')
                 .select('id, employee_id, employee_uuid, date, time_in, time_out')
                 .order('date', { ascending: false })
                 .order('time_in', { ascending: false });
+
+            // CRITICAL: Filter by employee_id for Employee role
+            const restrictedPositions = ['Employee', 'Driver', 'Dispatcher', 'employee', 'driver', 'dispatcher'];
+            const isRestricted = restrictedPositions.some(p => p.toLowerCase() === userPosition.toLowerCase());
+
+            if ((userRole === "Employee" || isRestricted) && userId) {
+                console.log('🔒 Filtering for employee:', userId);
+                query = query.eq('employee_id', userId);
+            }
+
+            const { data: attendanceData, error: attError } = await query;
 
             if (attError) {
                 console.error('Attendance query error:', attError);
@@ -55,7 +70,7 @@ if (window.location.pathname.includes("attendance.html")) {
                 return [];
             }
 
-            // Step 2: Get unique employee IDs (using employee_id string, not UUID)
+            // Get unique employee IDs
             const empIds = [...new Set(attendanceData.map(a => a.employee_id).filter(Boolean))];
             
             if (empIds.length === 0) {
@@ -63,7 +78,7 @@ if (window.location.pathname.includes("attendance.html")) {
                 return [];
             }
 
-            // Step 3: Fetch employees by employee_id (not by UUID)
+            // Fetch employees by employee_id
             const { data: employees, error: empError } = await supabase
                 .from('employees')
                 .select('id, employee_id, first_name, last_name, position_id')
@@ -74,14 +89,14 @@ if (window.location.pathname.includes("attendance.html")) {
                 throw empError;
             }
 
-            // Step 4: Fetch positions
+            // Fetch positions
             const posIds = [...new Set(employees.map(e => e.position_id).filter(Boolean))];
             const { data: positions } = await supabase
                 .from('positions')
                 .select('id, position_name, department_id')
                 .in('id', posIds);
 
-            // Step 5: Fetch departments
+            // Fetch departments
             const deptIds = [...new Set((positions || []).map(p => p.department_id).filter(Boolean))];
             const { data: departments } = await supabase
                 .from('departments')
@@ -214,11 +229,21 @@ if (window.location.pathname.includes("attendance.html")) {
        ROLE-BASED UI ADJUSTMENTS
     --------------------------- */
     function adjustUIForRole() {
-        if (userRole === "Employee") {
+        const restrictedPositions = ['Employee', 'Driver', 'Dispatcher', 'employee', 'driver', 'dispatcher'];
+        const isRestricted = restrictedPositions.some(p => p.toLowerCase() === userPosition.toLowerCase());
+
+        if (userRole === "Employee" || isRestricted) {
+            // Hide search box
             if (searchInput && searchInput.parentElement) {
                 searchInput.parentElement.style.display = "none";
             }
             
+            // Hide Log Attendance button
+            if (logAttendanceBtn) {
+                logAttendanceBtn.style.display = "none";
+            }
+            
+            // Update header
             const header = document.querySelector("header h1");
             if (header) {
                 header.textContent = "My Attendance";
@@ -226,9 +251,31 @@ if (window.location.pathname.includes("attendance.html")) {
             
             const headerDesc = document.querySelector("header p");
             if (headerDesc) {
-                headerDesc.textContent = "View your time and attendance records";
+                headerDesc.textContent = "View your attendance records";
+            }
+
+            // Hide Time In and Time Out columns
+            hideTimeColumns();
+        } else {
+            // Show button for HR/Manager/Admin
+            if (logAttendanceBtn) {
+                logAttendanceBtn.style.display = "block";
             }
         }
+    }
+
+    function hideTimeColumns() {
+        // Hide table headers for Time In, Time Out
+        const style = document.createElement('style');
+        style.textContent = `
+            table thead tr th:nth-child(6),
+            table thead tr th:nth-child(7),
+            table tbody tr td:nth-child(6),
+            table tbody tr td:nth-child(7) {
+                display: none !important;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     /* ---------------------------
@@ -243,13 +290,6 @@ if (window.location.pathname.includes("attendance.html")) {
         let all = await fetchAttendanceRecords();
         
         console.log('All records:', all);
-        console.log('User role:', userRole, 'User ID:', userId);
-
-        // Filter by role: Employees only see their own records
-        if (userRole === "Employee" && userId) {
-            all = all.filter(r => r.id === userId);
-            console.log('Filtered for employee:', all);
-        }
 
         // Apply date and search filters
         filteredData = all.filter(r => {
@@ -269,7 +309,10 @@ if (window.location.pathname.includes("attendance.html")) {
     function updateTotalAttendance(count) {
         if (!totalAttendance) return;
         
-        if (userRole === "Employee") {
+        const restrictedPositions = ['Employee', 'Driver', 'Dispatcher', 'employee', 'driver', 'dispatcher'];
+        const isRestricted = restrictedPositions.some(p => p.toLowerCase() === userPosition.toLowerCase());
+        
+        if (userRole === "Employee" || isRestricted) {
             totalAttendance.textContent = `My Records: ${count}`;
         } else {
             totalAttendance.textContent = `Total Attendance: ${count}`;
@@ -319,19 +362,7 @@ if (window.location.pathname.includes("attendance.html")) {
                         <td>
                             ${
                                 r.timeOut === "--" ?
-                                `<button 
-                                    onclick="goLogout('${r.id}')"
-                                    style="
-                                        background:#e74c3c;
-                                        color:white;
-                                        padding:6px 12px;
-                                        border:none;
-                                        border-radius:4px;
-                                        cursor:pointer;
-                                        font-weight:bold;
-                                        font-size: 12px;
-                                    "
-                                >Clock Out</button>` :
+                                `<span style="color:#f39c12;font-size:12px;">⏳ In Progress</span>` :
                                 `<span style="color:#27ae60;font-size:12px;">✓ Completed</span>`
                             }
                         </td>
@@ -418,35 +449,7 @@ if (window.location.pathname.includes("attendance.html")) {
     };
 
     /* ---------------------------
-       LOGOUT BUTTON (CLOCK OUT)
-    --------------------------- */
-    window.goLogout = async function(empId) {
-        if (!confirm(`Clock out employee ${empId}?`)) {
-            return;
-        }
-
-        try {
-            const today = new Date().toISOString().split("T")[0];
-            
-            const { error } = await supabase
-                .from('attendance')
-                .update({ time_out: new Date().toISOString() })
-                .eq('employee_id', empId)
-                .eq('date', today)
-                .is('time_out', null);
-
-            if (error) throw error;
-
-            showAlert('Successfully clocked out!', 'success');
-            await loadTable();
-        } catch (error) {
-            console.error('Error clocking out:', error);
-            showAlert('Error clocking out: ' + error.message, 'error');
-        }
-    };
-
-    /* ---------------------------
-       LOG ATTENDANCE BUTTON
+       LOG ATTENDANCE BUTTON (HR/Manager only)
     --------------------------- */
     if (logAttendanceBtn) {
         logAttendanceBtn.addEventListener("click", () => {
@@ -495,10 +498,7 @@ if (window.location.pathname.includes("attendance.html")) {
     /* ---------------------------
        INITIALIZATION
     --------------------------- */
-    // Apply role-based UI changes
     adjustUIForRole();
-    
-    // Initial load
     console.log('Initializing attendance page...');
     loadTable();
 }

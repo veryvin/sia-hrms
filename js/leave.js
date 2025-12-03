@@ -1,5 +1,5 @@
 // ===================================================
-// LEAVE REQUEST - SUPABASE READY
+// LEAVE REQUEST - EMPLOYEE RESTRICTED VIEW
 // ===================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,10 +11,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Get logged in user info
+  const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
+  const userRole = loggedInUser.role || 'Employee';
+  const userId = loggedInUser.empId || loggedInUser.employee_id || '';
+
+  console.log('🔍 User Role:', userRole);
+  console.log('🔍 User ID:', userId);
+
   /* ========== SUPABASE FUNCTIONS ========== */
   async function fetchLeaves() {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('leave_requests')
         .select(`
           id,
@@ -37,6 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
           )
         `)
         .order('created_at', { ascending: false });
+
+      // CRITICAL: Filter by employee_id for Employee role
+      if (userRole === "Employee" && userId) {
+        console.log('🔒 Filtering leaves for employee:', userId);
+        query = query.eq('employee_id', userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -62,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchEmployees() {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('employees')
         .select(`
           id,
@@ -74,6 +90,14 @@ document.addEventListener("DOMContentLoaded", () => {
             departments(department_name)
           )
         `);
+
+      // CRITICAL: Filter by employee_id for Employee role
+      if (userRole === "Employee" && userId) {
+        console.log('🔒 Filtering employees for:', userId);
+        query = query.eq('employee_id', userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -133,7 +157,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const days = daysBetweenInclusive(leaveData.startDate, leaveData.endDate);
 
     try {
-      // Check if employee has enough leave balance
       const currentBalance = await fetchLeaveBalance(leaveData.employeeId);
       
       if (currentBalance < days) {
@@ -150,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
           end_date: leaveData.endDate,
           number_of_days: days,
           comments: leaveData.reason,
-          status: 'Pending' // Use capitalized 'Pending'
+          status: 'Pending'
         });
 
       if (error) throw error;
@@ -198,7 +221,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const employees = await fetchEmployees();
 
     if (!employees || employees.length === 0) {
-      leaveList.innerHTML = `<p class="no-leave">No employees found. Add employees from the Employee page first.</p>`;
+      if (userRole === "Employee") {
+        leaveList.innerHTML = `<p class="no-leave">Loading your leave balance...</p>`;
+      } else {
+        leaveList.innerHTML = `<p class="no-leave">No employees found. Add employees from the Employee page first.</p>`;
+      }
       return;
     }
 
@@ -254,16 +281,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const leaves = await fetchLeaves();
     let filtered = leaves;
     
-    // Normalize filter for comparison (handle both capitalized and lowercase)
     const normalizedFilter = filter.charAt(0).toUpperCase() + filter.slice(1).toLowerCase();
 
     if (filter !== 'all') {
-      // Filter based on capitalized status ('Pending', 'Approved', 'Rejected')
       filtered = leaves.filter(l => l.status === normalizedFilter);
     }
 
     if (!filtered.length) {
-      leaveList.innerHTML = `<p class="no-leave">No ${normalizedFilter} requests found.</p>`;
+      if (userRole === "Employee") {
+        leaveList.innerHTML = `<p class="no-leave">You have no ${normalizedFilter} requests.</p>`;
+      } else {
+        leaveList.innerHTML = `<p class="no-leave">No ${normalizedFilter} requests found.</p>`;
+      }
       return;
     }
 
@@ -305,10 +334,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const dept = e.target.dataset.dept;
     const pos = e.target.dataset.pos;
 
-    employeeIdInput.value = id;
-    employeeNameInput.value = name;
-    departmentInput.value = dept;
-    positionInput.value = pos;
+    // For employees, pre-fill with their own data and make fields readonly
+    if (userRole === "Employee") {
+      employeeIdInput.value = id;
+      employeeNameInput.value = name;
+      departmentInput.value = dept;
+      positionInput.value = pos;
+      
+      // Make fields readonly for employees
+      employeeIdInput.readOnly = true;
+      employeeNameInput.readOnly = true;
+      departmentInput.readOnly = true;
+      positionInput.readOnly = true;
+    } else {
+      employeeIdInput.value = id;
+      employeeNameInput.value = name;
+      departmentInput.value = dept;
+      positionInput.value = pos;
+      
+      employeeIdInput.readOnly = false;
+      employeeNameInput.readOnly = false;
+      departmentInput.readOnly = false;
+      positionInput.readOnly = false;
+    }
 
     const balance = await fetchLeaveBalance(id);
     remainingBalance.textContent = `${balance} days`;
@@ -385,7 +433,6 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     .subscribe();
 
-  // Also listen to balance changes
   supabase
     .channel('leave-balance-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_balances' }, () => {

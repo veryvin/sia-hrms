@@ -345,11 +345,46 @@
   }
 
   /* ========================= ADD PAGE ========================= */
-  if (isAddPage) {
-    const form = qs('employeeForm');
-    const cancelBtn = qs('cancelAdd');
-    
-    if (!form) return;
+if (isAddPage) {
+  const form = qs('employeeForm');
+  const cancelBtn = qs('cancelAdd');
+  const positionSelect = qs('position');
+  const salaryInput = qs('salary');
+  
+  if (!form) return;
+
+  // Salary mapping based on position
+  const positionSalaryMap = {
+    'Employee': 15000.00,
+    'Porter': 15000.00,
+    'Driver': 18000.00,
+    'Dispatcher': 17000.00,
+    'Sales Representative': 20000.00,
+    'HR': 25000.00,
+    'Manager': 35000.00,
+    'HR Manager': 35000.00
+  };
+
+  // Add event listener to position select
+  if (positionSelect && salaryInput) {
+    positionSelect.addEventListener('change', function() {
+      const selectedPosition = this.value;
+      
+      // Check if position exists in our mapping
+      if (positionSalaryMap.hasOwnProperty(selectedPosition)) {
+        salaryInput.value = positionSalaryMap[selectedPosition].toFixed(2);
+        
+        // Optional: Add visual feedback
+        salaryInput.style.backgroundColor = '#e8f5e9';
+        setTimeout(() => {
+          salaryInput.style.backgroundColor = '';
+        }, 500);
+      } else {
+        // Default salary for unlisted positions
+        salaryInput.value = '15000.00';
+      }
+    });
+  }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

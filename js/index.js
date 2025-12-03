@@ -1,22 +1,58 @@
 // ===================================================
-// LOGIN PAGE - SUPABASE READY (FIXED INITIALIZATION)
+// SUPABASE CONFIGURATION
 // ===================================================
 
-const SUPABASE_URL = 'https://pheupnmnisguenfqaphs.supabase.co'; 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZXVwbm1uaXNndWVuZnFhcGhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyMzY2ODcsImV4cCI6MjA3OTgxMjY4N30.CYN8o3ilyeRY1aYLy7Vut47pLskF6gIcBv4zE3kOUqM'; 
+const SUPABASE_URL = 'https://iwaibzskwxkonojilfhg.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YWlienNrd3hrb25vamlsZmhnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjkyMDY1MCwiZXhwIjoyMDc4NDk2NjUwfQ.9pTCt8OxOlTv4wUUY2Fg8T8zRCmL4bf4Jkh43yEOm8E';
 
-// Initialize the Supabase Client directly in this file
-const { createClient } = supabase; 
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase client
+let supabaseClient;
+if (typeof supabase !== 'undefined') {
+  const { createClient } = supabase;
+  supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  window.supabaseClient = supabaseClient;
+  console.log('✅ Supabase client initialized successfully');
+} else {
+  console.error('❌ Supabase library not loaded. Make sure to include the Supabase CDN script before this file.');
+}
 
+// ===================================================
+// HELPER FUNCTIONS
+// ===================================================
+
+// Handle Supabase errors
+function handleSupabaseError(error, context) {
+  console.error(`Supabase Error (${context}):`, error);
+  return null;
+}
+
+// Show loading state
+function showLoading(elementId) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.innerHTML = '<tr><td colspan="10" class="empty">Loading...</td></tr>';
+  }
+}
+
+// Export helper functions for use in other files
+window.handleSupabaseError = handleSupabaseError;
+window.showLoading = showLoading;
+
+// ===================================================
+// LOGIN PAGE - SUPABASE READY (FULLY FIXED)
+// ===================================================
 
 document.addEventListener("DOMContentLoaded", () => {
     
-    // Use the initialized client
     const supabase = supabaseClient;
 
+    if (!supabase) {
+        console.error("⚠️ Supabase client not initialized");
+        return;
+    }
+
     // HR/Manager Access PIN (6 digits)
-    const ADMIN_PIN = "123456"; // Change this to your desired PIN
+    const ADMIN_PIN = "123456";
 
     const loginForm = document.getElementById("loginForm");
     const createBtn = document.getElementById("createBtn");
@@ -27,54 +63,48 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    // LOGIN HANDLER
+    // ===================================================
+    // LOGIN HANDLER - COMPLETELY REWRITTEN
+    // ===================================================
     loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        // Get employee_id instead of email from the form
         const employeeId = document.getElementById("employeeId").value.trim();
         const pwd = document.getElementById("password").value.trim();
 
         console.log("🔍 Attempting login with employee_id:", employeeId);
-        console.log("🔍 Password length:", pwd.length);
-
         errorMessage.style.display = "none";
 
         try {
-            // 1. Get employee details using employee_id
-            const { data: employee, error: empError } = await supabase
+            // ===== STEP 1: Get Employee Record (using select without single) =====
+            const { data: employees, error: empError } = await supabase
                 .from('employees')
-                .select(`
-                    id, 
-                    email, 
-                    employee_id, 
-                    first_name, 
-                    last_name, 
-                    password,
-                    position:positions!employees_position_id_fkey(
-                        position_name,
-                        department:departments(department_name),
-                        role:roles(role_name)
-                    )
-                `)
-                .eq('employee_id', employeeId)
-                .single();
+                .select('*')
+                .eq('employee_id', employeeId);
 
-            console.log("📊 Query result - employee:", employee);
-            console.log("❌ Query error:", empError);
+            // Check for database error
+            if (empError) {
+                console.log("❌ Database error:", empError);
+                errorMessage.textContent = "❌ Database error. Please try again.";
+                errorMessage.style.display = "block";
+                return;
+            }
 
-            if (empError || !employee) {
-                console.log("⚠️ Employee not found or query error");
+            // Check if any employees were found
+            if (!employees || employees.length === 0) {
+                console.log("⚠️ Employee not found in database");
                 errorMessage.textContent = "❌ Invalid Employee ID or Password.";
                 errorMessage.style.display = "block";
                 return;
             }
 
-            console.log("🔑 Stored password in DB:", employee.password);
-            console.log("🔑 Entered password:", pwd);
-            console.log("🔑 Passwords match:", employee.password === pwd);
+            // Get the first (and should be only) employee
+            const employee = employees[0];
+            console.log("📊 Employee found:", employee);
 
-            // 2. CHECK PASSWORD DIRECTLY (For Testing Only!)
+            // ===== STEP 2: Verify Password =====
+            console.log("🔑 Verifying password...");
+
             if (employee.password !== pwd) {
                 console.log("⚠️ Password mismatch!");
                 errorMessage.textContent = "❌ Invalid Employee ID or Password.";
@@ -82,41 +112,105 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            console.log("✅ Login successful! Redirecting...");
+            console.log("✅ Password correct! Fetching position data...");
 
-            // 3. Store user session
+            // ===== STEP 3: Get Position, Department, and Role =====
+            let role = 'Employee';
+            let positionName = 'Unassigned';
+            let departmentName = 'Unassigned';
+
+            if (employee.position_id) {
+                console.log("🔍 Fetching position for position_id:", employee.position_id);
+
+                // Get position details
+                const { data: positions, error: posError } = await supabase
+                    .from('positions')
+                    .select('position_name, department_id, role_id')
+                    .eq('id', employee.position_id);
+
+                if (posError) {
+                    console.log("❌ Position error:", posError);
+                } else if (positions && positions.length > 0) {
+                    const position = positions[0];
+                    console.log("📊 Position data:", position);
+                    positionName = position.position_name || 'Unassigned';
+
+                    // Get department name
+                    if (position.department_id) {
+                        const { data: depts, error: deptError } = await supabase
+                            .from('departments')
+                            .select('department_name')
+                            .eq('id', position.department_id);
+                        
+                        if (deptError) {
+                            console.log("❌ Department error:", deptError);
+                        } else if (depts && depts.length > 0) {
+                            console.log("📊 Department data:", depts[0]);
+                            departmentName = depts[0].department_name;
+                        }
+                    }
+
+                    // Get role name
+                    if (position.role_id) {
+                        const { data: roles, error: roleError } = await supabase
+                            .from('roles')
+                            .select('role_name')
+                            .eq('id', position.role_id);
+                        
+                        if (roleError) {
+                            console.log("❌ Role error:", roleError);
+                        } else if (roles && roles.length > 0) {
+                            console.log("📊 Role data:", roles[0]);
+                            role = roles[0].role_name;
+                        }
+                    }
+                } else {
+                    console.warn("⚠️ Position not found for position_id:", employee.position_id);
+                }
+            } else {
+                console.warn("⚠️ Employee has no position_id assigned");
+            }
+
+            console.log("📊 Final extracted data:");
+            console.log("   - Role:", role);
+            console.log("   - Position:", positionName);
+            console.log("   - Department:", departmentName);
+
+            // ===== STEP 4: Build User Session =====
             const userSession = {
                 id: employee.id, 
                 empId: employee.employee_id,
                 email: employee.email,
                 firstName: employee.first_name,
                 lastName: employee.last_name,
-                role: employee.position?.role?.role_name || 'Employee',
-                position: employee.position?.position_name || '',
-                department: employee.position?.department?.department_name || ''
+                role: role,
+                position: positionName,
+                department: departmentName
             };
 
-            console.log("👤 User session:", userSession);
+            console.log("👤 User session created:", userSession);
 
             localStorage.setItem("loggedInUser", JSON.stringify(userSession));
             
-            // 4. Redirect based on role
-            if (userSession.role === "Admin" || userSession.role === "HR" || userSession.role === "Manager") {
-                console.log("🎯 Redirecting to dashboard...");
+            // ===== STEP 5: Redirect Based on Role =====
+            if (role === "Admin" || role === "HR" || role === "Manager") {
+                console.log("🎯 Redirecting to dashboard (Admin/HR/Manager)...");
                 window.location.href = "dashboard.html";
             } else {
-                console.log("🎯 Redirecting to attendance...");
+                console.log("🎯 Redirecting to attendance (Employee)...");
                 window.location.href = "attendance.html";
             }
 
         } catch (error) {
-            console.error('❌ Login error:', error);
+            console.error('❌ Unexpected login error:', error);
             errorMessage.textContent = "❌ An error occurred. Please try again.";
             errorMessage.style.display = "block";
         }
     });
 
+    // ===================================================
     // CREATE ACCOUNT BUTTON - Shows PIN Modal
+    // ===================================================
     if (createBtn) {
         createBtn.addEventListener("click", () => {
             showPinModal();
@@ -130,7 +224,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // ===================================================
     // PIN MODAL FUNCTIONS
+    // ===================================================
     function showPinModal() {
         const modalHTML = `
             <div id="pinModal" style="
@@ -233,11 +329,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         pinInput.focus();
 
+        // Only allow numbers in PIN input
         pinInput.addEventListener("input", (e) => {
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
             pinError.style.display = "none";
         });
 
+        // Submit on Enter key
         pinInput.addEventListener("keypress", (e) => {
             if (e.key === "Enter") {
                 verifyPin();
@@ -257,9 +355,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (enteredPin === ADMIN_PIN) {
+                console.log("✅ PIN verified successfully");
                 modal.remove();
                 window.location.href = "createaccount.html";
             } else {
+                console.log("❌ Incorrect PIN entered");
                 pinError.textContent = "❌ Incorrect PIN. Access denied.";
                 pinError.style.display = "block";
                 pinInput.value = "";
@@ -268,9 +368,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         pinCancel.addEventListener("click", () => {
+            console.log("❌ PIN modal cancelled");
             modal.remove();
         });
 
+        // Close modal when clicking outside
         modal.addEventListener("click", (e) => {
             if (e.target === modal) {
                 modal.remove();

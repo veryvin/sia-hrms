@@ -3,13 +3,13 @@
 // ===================================================
 
 const SUPABASE_URL = 'https://iwaibzskwxkonojilfhg.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YWlienNrd3hrb25vamlsZmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MjA2NTAsImV4cCI6MjA3ODQ5NjY1MH0.dKa2WvAXCKrtzNY9UD2FqQSaRfhm3WRCbZtQuJ9xxXE';
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YWlienNrd3hrb25vamlsZmhnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjkyMDY1MCwiZXhwIjoyMDc4NDk2NjUwfQ.9pTCt8OxOlTv4wUUY2Fg8T8zRCmL4bf4Jkh43yEOm8E';
 
 // Initialize Supabase client
 // The Supabase CDN exposes the global 'supabase' object with createClient method
 if (typeof supabase !== 'undefined') {
   const { createClient } = supabase;
-  window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   console.log('✅ Supabase client initialized successfully');
 } else {
   console.error('❌ Supabase library not loaded. Make sure to include the Supabase CDN script before this file.');

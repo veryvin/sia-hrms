@@ -166,11 +166,6 @@ function formatTimeFromISO(isoString) {
 
 // ==================== MODAL MANAGEMENT ====================
 
-function showClockModal() {
-    document.getElementById('loginModal').style.display = 'none';
-    document.getElementById('clockModal').classList.add('show');
-}
-
 function createInitialAvatar(firstName, lastName) {
     const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
     const canvas = document.createElement('canvas');
@@ -410,19 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('currentDate').textContent = formatDate();
 
-    const inputEmpId = document.getElementById("inputEmpId");
-    const btnLogin = document.getElementById("btnLogin");
     const btnLogout = document.getElementById("btnLogout");
     const btnClockInOut = document.getElementById("btnClockInOut");
-
-    // Show clock interface immediately (NO LOGIN REQUIRED)
-    showClockModal();
-    
-    // Update instruction text
-    const instructionText = document.querySelector('.login-modal p');
-    if (instructionText) {
-        instructionText.textContent = 'Enter Employee ID to clock in/out';
-    }
 
     // Set default display
     document.getElementById('displayName').textContent = '--';
@@ -433,48 +417,37 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('detailPosition').textContent = '--';
     document.getElementById('detailDept').textContent = '--';
 
-    btnLogin.addEventListener('click', async () => {
-        const empId = inputEmpId.value.trim();
+    // Auto-load employee from localStorage (if logged in to attendance system)
+    const loggedInUserString = localStorage.getItem('loggedInUser');
+    if (loggedInUserString) {
+        const loggedInUser = JSON.parse(loggedInUserString);
+        const empId = loggedInUser.employee_id;
         
-        if (!empId) {
-            showAlert('Please enter Employee ID', 'error', 'alertBox');
-            return;
+        if (empId) {
+            // Auto-load the logged-in employee
+            getEmployeeById(empId).then(async (employee) => {
+                if (employee) {
+                    currentEmployee = employee;
+                    const fullName = `${employee.firstName} ${employee.lastName}`;
+                    const photo = employee.photo || createInitialAvatar(employee.firstName, employee.lastName);
+
+                    document.getElementById('profileImg').src = photo;
+                    document.getElementById('displayName').textContent = fullName;
+                    document.getElementById('displayPosition').textContent = employee.position;
+                    document.getElementById('displayId').textContent = employee.empId;
+
+                    document.getElementById('detailId').textContent = employee.empId;
+                    document.getElementById('detailName').textContent = fullName;
+                    document.getElementById('detailPosition').textContent = employee.position;
+                    document.getElementById('detailDept').textContent = employee.department;
+
+                    await refreshRecordsDisplay();
+                }
+            });
         }
+    }
 
-        const employee = await getEmployeeById(empId);
-        
-        if (!employee) {
-            showAlert('Employee ID not found in system', 'error', 'alertBox');
-            return;
-        }
-
-        // Set current employee and update display
-        currentEmployee = employee;
-        const fullName = `${employee.firstName} ${employee.lastName}`;
-        const photo = employee.photo || createInitialAvatar(employee.firstName, employee.lastName);
-
-        document.getElementById('profileImg').src = photo;
-        document.getElementById('displayName').textContent = fullName;
-        document.getElementById('displayPosition').textContent = employee.position;
-        document.getElementById('displayId').textContent = employee.empId;
-
-        document.getElementById('detailId').textContent = employee.empId;
-        document.getElementById('detailName').textContent = fullName;
-        document.getElementById('detailPosition').textContent = employee.position;
-        document.getElementById('detailDept').textContent = employee.department;
-
-        await refreshRecordsDisplay();
-        inputEmpId.value = '';
-        showAlert(`✅ Employee loaded: ${fullName}`, 'success', 'alertBox2');
-    });
-
-    inputEmpId.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            btnLogin.click();
-        }
-    });
-
-    btnLogout.addEventListener('click', () => {
+    btnLogout?.addEventListener('click', () => {
         currentEmployee = null;
         
         // Clear employee display
@@ -500,16 +473,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.innerHTML = '<span class="icon">🟢</span> CLOCK IN';
         btn.style.background = '#27ae60';
         
-        showAlert('Employee cleared. Enter new ID to continue.', 'success', 'alertBox2');
-        
-        // Focus back to input
-        inputEmpId.focus();
+        showAlert('Session cleared.', 'success', 'alertBox2');
     });
 
-    btnClockInOut.addEventListener('click', async () => {
+    btnClockInOut?.addEventListener('click', async () => {
         if (!currentEmployee) {
-            showAlert('Please enter Employee ID first', 'warning', 'alertBox2');
-            inputEmpId.focus();
+            showAlert('Please login to attendance system first', 'warning', 'alertBox2');
             return;
         }
         

@@ -38,6 +38,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Attendance Tracking</title>
     <link rel="stylesheet" href="../css/attendance.css" />
+    <style>
+      /* Blur background when modal is open */
+      body.modal-open .container {
+        filter: blur(5px);
+        pointer-events: none;
+      }
+
+      /* Modal styles */
+      #clockModalContainer {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(5px);
+        z-index: 10000;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+      }
+
+      #clockModalContainer.show {
+        display: flex;
+      }
+
+      #clockModalContainer iframe {
+        width: 100%;
+        max-width: 550px;
+        height: 700px;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+        background: white;
+      }
+
+      @media (max-width: 768px) {
+        #clockModalContainer {
+          padding: 20px 15px;
+        }
+
+        #clockModalContainer iframe {
+          max-width: 100%;
+          height: 650px;
+          border-radius: 15px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        #clockModalContainer {
+          padding: 10px;
+        }
+
+        #clockModalContainer iframe {
+          height: 600px;
+          border-radius: 12px;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -125,7 +185,10 @@
       </main>
     </div>
 
-
+    <!-- Modal Container for Clock In/Out -->
+    <div id="clockModalContainer">
+      <iframe id="clockIframe" src="in&out.html"></iframe>
+    </div>
 
     <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -241,7 +304,40 @@
             localStorage.clear();
             window.location.href = "index.html";
         });
+
+        // === MODAL FUNCTIONALITY ===
+        const logAttendanceBtn = document.getElementById("logAttendanceBtn");
+        const clockModalContainer = document.getElementById("clockModalContainer");
+        const clockIframe = document.getElementById("clockIframe");
+
+        if (logAttendanceBtn) {
+            logAttendanceBtn.addEventListener("click", () => {
+                // Show modal and blur background
+                clockModalContainer.classList.add("show");
+                document.body.classList.add("modal-open");
+                
+                // Reload iframe to refresh the clock page
+                clockIframe.src = clockIframe.src;
+            });
+        }
+
+        // Close modal when clicking outside iframe
+        clockModalContainer?.addEventListener("click", (e) => {
+            if (e.target === clockModalContainer) {
+                clockModalContainer.classList.remove("show");
+                document.body.classList.remove("modal-open");
+            }
+        });
+
+        // Listen for messages from iframe (for close button inside in&out.html)
+        window.addEventListener("message", (event) => {
+            if (event.data === "closeModal") {
+                clockModalContainer.classList.remove("show");
+                document.body.classList.remove("modal-open");
+            }
+        });
     });
+    
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -5,42 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time In / Time Out - RMT</title>
     <link rel="stylesheet" href="../css/in&out.css">
+    <style>
+        /* Close button for modal mode */
+        .modal-close-button {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+            transition: all 0.3s ease;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .modal-close-button:hover {
+            background: #c0392b;
+            transform: scale(1.15) rotate(90deg);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
+        }
+
+        /* Adjustments when in iframe */
+        .in-iframe .modal-close-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .in-iframe body {
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            background: transparent;
+        }
+
+        .in-iframe .modal-overlay {
+            position: static;
+            background: transparent;
+            overflow: visible;
+            height: 100%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .in-iframe .time-tracker-container {
+            margin: 0;
+            box-shadow: none;
+            max-height: none;
+            overflow: visible;
+            padding: 30px;
+        }
+
+        /* Additional CSS for proper display */
+        .record-duration {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+            display: block;
+            color: #6b7280;
+        }
+
+        .time-record.total {
+            grid-column: 1 / -1;
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            text-align: center;
+        }
+
+        .time-record.total .record-label {
+            color: #2e7d32;
+        }
+
+        .time-record.total .record-time {
+            color: #2e7d32;
+        }
+
+        .time-record.active {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.85;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- LOGIN MODAL -->
-    <div class="modal-overlay show" id="loginModal">
-        <div class="time-tracker-container login-container">
-            
-            <div class="tracker-header">
-                <div class="logo-wrapper">
-                    <div style="font-size: 50px; color: #0e724e; font-weight: bold;">⏱️</div>
-                    <span class="logo-text">RMT</span>
-                </div>
-                <div class="tracker-title">Time Management</div>
-                <div class="tracker-subtitle">Employee Attendance System</div>
-            </div>
-
-            <div class="employee-info">
-                <div class="info-row">
-                    <span class="info-label">Employee ID:</span>
-                    <input type="text" id="inputEmpId" class="info-input" placeholder="Enter ID (E001, E002, E003)">
-                </div>
-            </div>
-
-            <div class="alert" id="alertBox"></div>
-
-            <div class="button-group">
-                <button class="btn btn-login" id="btnLogin">
-                    <span class="icon">→</span> LOGIN
-                </button>
-            </div>
-
-        </div>
-    </div>
+    <!-- Close Button (only visible when in modal/iframe) -->
+    <button class="modal-close-button" id="modalCloseBtn">×</button>
 
     <!-- CLOCK IN/OUT MODAL -->
-    <div class="modal-overlay" id="clockModal">
+    <div class="modal-overlay show" id="clockModal">
         <div class="time-tracker-container clock-container">
             
             <button class="btn-logout logout-btn" id="btnLogout">
@@ -50,30 +122,30 @@
             <!-- Employee Profile -->
             <div class="employee-profile">
                 <div class="profile-picture" id="profilePicture">
-                    <img id="profileImg" src="" alt="Employee">
+                    <img id="profileImg" src="https://via.placeholder.com/120/0f9e5e/ffffff?text=--" alt="Employee">
                 </div>
-                <h2 class="employee-name" id="displayName">John Doe</h2>
-                <p class="employee-position" id="displayPosition">Senior Software Developer</p>
-                <p class="employee-id" id="displayId">E001</p>
+                <h2 class="employee-name" id="displayName">--</h2>
+                <p class="employee-position" id="displayPosition">--</p>
+                <p class="employee-id" id="displayId">--</p>
             </div>
 
             <!-- Employee Details -->
             <div class="employee-details">
                 <div class="detail-row">
                     <span class="detail-label">Employee ID:</span>
-                    <span class="detail-value" id="detailId">E001</span>
+                    <span class="detail-value" id="detailId">--</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Name:</span>
-                    <span class="detail-value" id="detailName">John Doe</span>
+                    <span class="detail-value" id="detailName">--</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Position:</span>
-                    <span class="detail-value" id="detailPosition">Senior Software Developer</span>
+                    <span class="detail-value" id="detailPosition">--</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Department:</span>
-                    <span class="detail-value" id="detailDept">Engineering</span>
+                    <span class="detail-value" id="detailDept">--</span>
                 </div>
             </div>
 
@@ -85,7 +157,7 @@
 
             <!-- Clock In/Out Button -->
             <button class="btn btn-clock" id="btnClockInOut">
-                <span class="icon">🔘</span> CLOCK IN / OUT
+                <span class="icon">🟢</span> CLOCK IN / OUT
             </button>
 
             <!-- Time Records -->
@@ -115,7 +187,24 @@
     <!-- 2. Load config file SECOND -->
     <script src="../js/supabase-config.js"></script>
     
-    <!-- 3. Load your app script LAST -->
+    <!-- 3. Detect if in iframe and add close button functionality -->
+    <script>
+        // Check if page is loaded in iframe
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+            
+            // Add close button functionality
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+            if (modalCloseBtn) {
+                modalCloseBtn.addEventListener('click', () => {
+                    // Send message to parent window to close modal
+                    window.parent.postMessage('closeModal', '*');
+                });
+            }
+        }
+    </script>
+    
+    <!-- 4. Load your app script LAST -->
     <script src="../js/in&out.js"></script>
 </body>
 </html>

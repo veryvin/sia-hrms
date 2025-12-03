@@ -389,54 +389,75 @@ function showDeleteConfirmation() {
   }
 
   // ==================== SIMPLIFIED PAYROLL CALCULATION ====================
-  async function calculateEmployeePayroll(employee, periodStart, periodEnd) {
-    if (!employee || !employee.employee_id) return null;
+ // ==================== SIMPLIFIED PAYROLL CALCULATION ====================
+async function calculateEmployeePayroll(employee, periodStart, periodEnd) {
+  if (!employee || !employee.employee_id) return null;
 
-    // Fetch attendance using employee_id (not UUID)
-    const attendanceRecords = await fetchAttendanceForEmployee(
-      employee.employee_id, 
-      periodStart, 
-      periodEnd
-    );
+  // Fetch attendance using employee_id (not UUID)
+  const attendanceRecords = await fetchAttendanceForEmployee(
+    employee.employee_id, 
+    periodStart, 
+    periodEnd
+  );
+  
+  // Get salary from employee record, with fallback based on position
+  let monthlySalary = parseFloat(employee.salary);
+  
+  // If no salary set, assign default based on position
+  if (!monthlySalary || monthlySalary === 0) {
+    const positionName = await getPositionName(employee.position_id);
     
-    const monthlySalary = parseFloat(employee.salary) || 17000;
-
-    console.log(`💰 Calculating payroll for ${employee.employee_id}:`, {
-      attendanceRecords: attendanceRecords.length,
-      monthlySalary,
-      period: `${periodStart} to ${periodEnd}`
-    });
-
-    // Count days worked (unique dates with attendance)
-    const uniqueDates = new Set(attendanceRecords.map(r => r.date));
-    const daysWorked = uniqueDates.size;
-    
-    // Calculate pay based on daily rate × days present
-    const basicPay = PayrollCalculator.calculateBasicPay(monthlySalary, daysWorked);
-    const grossPay = basicPay;
-
-    // Calculate deductions
-    const sss = PayrollCalculator.calculateSSS(grossPay);
-    const philHealth = PayrollCalculator.calculatePhilHealth(grossPay);
-    const pagibig = PayrollCalculator.calculatePagIBIG(grossPay);
-    const wtax = PayrollCalculator.calculateWithholdingTax(grossPay);
-
-    const totalDeductions = sss + philHealth + pagibig + wtax;
-    const netPay = grossPay - totalDeductions;
-
-    return {
-      daysWorked,
-      dailyRate: Number(PayrollCalculator.calculateDailyRate(monthlySalary).toFixed(2)),
-      basicPay: Number(basicPay.toFixed(2)),
-      grossPay: Number(grossPay.toFixed(2)),
-      sss: Number(sss.toFixed(2)),
-      philHealth: Number(philHealth.toFixed(2)),
-      pagibig: Number(pagibig.toFixed(2)),
-      wtax: Number(wtax.toFixed(2)),
-      totalDeductions: Number(totalDeductions.toFixed(2)),
-      netPay: Number(netPay.toFixed(2))
+    // Default salaries by position
+    const defaultSalaries = {
+      'Employee': 15000,
+      'Porter': 15000,
+      'Driver': 18000,
+      'Dispatcher': 17000,
+      'Sales Representative': 20000,
+      'HR': 25000,
+      'Manager': 35000
     };
+    
+    monthlySalary = defaultSalaries[positionName] || 15000;
+    console.log(`⚠️ No salary found for ${employee.first_name}, using default: ₱${monthlySalary}`);
   }
+
+  console.log(`💰 Calculating payroll for ${employee.employee_id}:`, {
+    attendanceRecords: attendanceRecords.length,
+    monthlySalary,
+    period: `${periodStart} to ${periodEnd}`
+  });
+
+  // Count days worked (unique dates with attendance)
+  const uniqueDates = new Set(attendanceRecords.map(r => r.date));
+  const daysWorked = uniqueDates.size;
+  
+  // Calculate pay based on daily rate × days present
+  const basicPay = PayrollCalculator.calculateBasicPay(monthlySalary, daysWorked);
+  const grossPay = basicPay;
+
+  // Calculate deductions
+  const sss = PayrollCalculator.calculateSSS(grossPay);
+  const philHealth = PayrollCalculator.calculatePhilHealth(grossPay);
+  const pagibig = PayrollCalculator.calculatePagIBIG(grossPay);
+  const wtax = PayrollCalculator.calculateWithholdingTax(grossPay);
+
+  const totalDeductions = sss + philHealth + pagibig + wtax;
+  const netPay = grossPay - totalDeductions;
+
+  return {
+    daysWorked,
+    dailyRate: Number(PayrollCalculator.calculateDailyRate(monthlySalary).toFixed(2)),
+    basicPay: Number(basicPay.toFixed(2)),
+    grossPay: Number(grossPay.toFixed(2)),
+    sss: Number(sss.toFixed(2)),
+    philHealth: Number(philHealth.toFixed(2)),
+    pagibig: Number(pagibig.toFixed(2)),
+    wtax: Number(wtax.toFixed(2)),
+    totalDeductions: Number(totalDeductions.toFixed(2)),
+    netPay: Number(netPay.toFixed(2))
+  };
+}
 
   // ==================== GET POSITION NAME ====================
   async function getPositionName(positionId) {

@@ -60,13 +60,34 @@
             padding: 20px;
         }
 
-        .in-iframe .time-tracker-container {
-            margin: 0;
-            box-shadow: none;
-            max-height: none;
-            overflow: visible;
-            padding: 30px;
-        }
+            .in-iframe .time-tracker-container {
+                /* 1. Reduce overall top/bottom spacing on the main container */
+                padding-top: 20px;
+                padding-bottom: 20px;
+                padding-left: 30px;
+                padding-right: 30px;
+                
+                /* 2. Ensure the container resizes to fit its content */
+                max-height: fit-content;
+                height: auto; 
+                overflow-y: hidden; /* Prevent unnecessary vertical scrollbar */
+                
+                /* Ensure other provided properties are correct */
+                box-shadow: none;
+                overflow: visible; 
+            }
+
+            /* 3. Target the large spacing elements */
+
+            /* Reduce space above the green clock box (assuming this is where the profile info ends) */
+            .in-iframe .time-tracker-container > div:nth-child(2) { /* Target the profile details block */
+                margin-bottom: 10px;
+            }
+
+            /* Reduce space below the green clock box */
+            .in-iframe .time-tracker-container .clock-in-out-button {
+                margin-bottom: 10px; /* Reduce space below the green clock button */
+            }
 
         /* Additional CSS for proper display */
         .record-duration {
@@ -115,9 +136,6 @@
     <div class="modal-overlay show" id="clockModal">
         <div class="time-tracker-container clock-container">
             
-            <button class="btn-logout logout-btn" id="btnLogout">
-                <span class="icon">⬅</span> LOGOUT
-            </button>
 
             <!-- Employee Profile -->
             <div class="employee-profile">
@@ -205,6 +223,6 @@
     </script>
     
     <!-- 4. Load your app script LAST -->
-    <script src="../js/in&out.js"></script>
+    <script src="../js/attendance.js"></script>
 </body>
 </html>

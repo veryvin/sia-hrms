@@ -1,571 +1,547 @@
-/* ===============================
-   ATTENDANCE PAGE - UNIVERSAL VIEW with MODAL CLOCKING
-    FIX: All helper functions are hoisted, and the main logic is wrapped correctly.
-================================ */
+// ==================== ATTENDANCE.JS ====================
+// Handles employee time in/out functionality using Supabase
+// ==================== INITIAL SETUP ====================
 
-// --- GLOBAL HELPER FUNCTIONS (MUST BE OUTSIDE THE MAIN BLOCK) ---
+// Safety check for Supabase
+if (!window.supabaseClient) {
+    console.error('Supabase client not initialized! Check script loading order.');
+}
 
-// FIX 1: Define formatting functions here to resolve "ReferenceError: formatTime is not defined"
-function formatTime(isoString) {
-    if (!isoString) return '--';
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
+const supabase = window.supabaseClient;
+let currentEmployee = null;
+
+// ==================== IMPROVED DATE FUNCTIONS ====================
+
+// Get current date in YYYY-MM-DD format (LOCAL timezone)
+function getCurrentDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Get current timestamp in ISO format
+function getCurrentTimestamp() {
+    return new Date().toISOString();
+}
+
+// ==================== FETCH EMPLOYEE FROM SUPABASE ====================
+
+async function getEmployeeById(empId) {
+    if (!supabase) {
+        console.error('Supabase not available');
+        return null;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('employees')
+            .select(`
+                *,
+                positions(
+                    position_name,
+                    departments(department_name)
+                )
+            `)
+            .eq('employee_id', empId)
+            .single();
+
+        if (error) throw error;
+
+        return {
+            id: data.id,
+            empId: data.employee_id,
+            firstName: data.first_name,
+            lastName: data.last_name,
+            position: data.positions?.position_name || 'N/A',
+            department: data.positions?.departments?.department_name || 'N/A',
+            photo: data.photo_url
+        };
+    } catch (error) {
+        console.error('Error fetching employee:', error);
+        return null;
+    }
+}
+
+// ==================== ATTENDANCE FUNCTIONS ====================
+
+async function getAllTodayRecords(empId) {
+    if (!supabase) {
+        console.error('Supabase not available');
+        return [];
+    }
+    
+    try {
+        const today = getCurrentDate();
+        console.log('📅 Fetching records for date:', today);
+        
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('employee_id', empId)
+            .eq('date', today)
+            .order('time_in', { ascending: true });
+
+        if (error) throw error;
+        
+        console.log('Found records:', data);
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching today records:', error);
+        return [];
+    }
+}
+
+async function getTodayActiveRecord(empId) {
+    if (!supabase) {
+        console.error('Supabase not available');
+        return null;
+    }
+    
+    try {
+        const today = getCurrentDate();
+        
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('employee_id', empId)
+            .eq('date', today)
+            .is('time_out', null)
+            .order('time_in', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        
+        return data || null;
+    } catch (error) {
+        console.error('Error fetching active record:', error);
+        return null;
+    }
+}
+
+// ==================== TIME CALCULATION ====================
+
+function calculateHoursBetween(timeIn, timeOut) {
+    if (!timeIn || !timeOut) return 0;
+    
+    const start = new Date(timeIn);
+    const end = new Date(timeOut);
+    const diffMs = end - start;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    
+    return Math.max(0, diffHours);
+}
+
+function formatHours(hours) {
+    const h = Math.floor(hours);
+    const m = Math.floor((hours - h) * 60);
+    return `${h}h ${m}m`;
+}
+
+// ==================== FORMATTING HELPERS ====================
+
+function formatTime(date = new Date()) {
+    return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
         hour12: true
     });
 }
 
-function showAlert(message, type = 'success') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert ${type}`;
-    alertDiv.textContent = message;
-    alertDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        background: ${type === 'error' ? '#e74c3c' : '#27ae60'};
-        color: white;
-        border-radius: 5px;
-        z-index: 9999;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        font-weight: bold;
+function formatDate(date = new Date()) {
+    return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    });
+}
+
+function formatTimeFromISO(isoString) {
+    if (!isoString) return "--:--:--";
+    const date = new Date(isoString);
+    return formatTime(date);
+}
+
+// ==================== MODAL MANAGEMENT ====================
+
+function createInitialAvatar(firstName, lastName) {
+    const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+    const canvas = document.createElement('canvas');
+    canvas.width = 120;
+    canvas.height = 120;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#0f9e5e';
+    ctx.fillRect(0, 0, 120, 120);
+    
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initials, 60, 60);
+    
+    return canvas.toDataURL();
+}
+
+// ==================== UI UPDATES ====================
+
+async function refreshRecordsDisplay() {
+    if (!currentEmployee) {
+        // Clear display when no employee
+        document.querySelector('.records-grid').innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999;">
+                Please log in to view records
+            </div>
+        `;
+        return;
+    }
+    
+    const records = await getAllTodayRecords(currentEmployee.empId);
+    const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
+    
+    updateRecordsDisplay(records, activeRecord);
+    updateClockButton(activeRecord);
+    updateDateDisplay();
+}
+
+function updateDateDisplay() {
+    const dateElement = document.getElementById('currentDate');
+    const today = getCurrentDate();
+    
+    dateElement.textContent = formatDate();
+    console.log('📅 Current date:', today);
+}
+
+function updateRecordsDisplay(records, activeRecord) {
+    const recordsGrid = document.querySelector('.records-grid');
+    
+    if (!records || records.length === 0) {
+        recordsGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999;">
+                No time entries yet today
+            </div>
+        `;
+        return;
+    }
+    
+    // Show single in/out record
+    const record = records[0];
+    const timeIn = formatTimeFromISO(record.time_in);
+    const timeOut = record.time_out ? formatTimeFromISO(record.time_out) : '--:--:--';
+    const isActive = record.time_out === null;
+    const hours = record.time_out ? calculateHoursBetween(record.time_in, record.time_out) : 0;
+    
+    let html = `
+        <div class="time-record in ${isActive ? 'active' : ''}">
+            <span class="record-label">TIME IN</span>
+            <span class="record-time">${timeIn}</span>
+        </div>
+        <div class="time-record out ${isActive ? 'active' : ''}">
+            <span class="record-label">TIME OUT</span>
+            <span class="record-time">${timeOut}</span>
+            ${record.time_out ? `<span class="record-duration">${formatHours(hours)}</span>` : '<span class="record-duration" style="color:#f39c12;">Active</span>'}
+        </div>
     `;
-    document.body.appendChild(alertDiv);
-    setTimeout(() => {
-        alertDiv.style.opacity = '0';
-        alertDiv.style.transition = 'opacity 0.3s';
-        setTimeout(() => alertDiv.remove(), 300);
-    }, 3000);
+    
+    // Add total hours row if clocked out
+    if (record.time_out) {
+        html += `
+            <div class="time-record total" style="grid-column: 1 / -1; background: #e8f5e9; border: 2px solid #4caf50;">
+                <span class="record-label" style="font-weight: bold; font-size: 16px;">TOTAL HOURS TODAY</span>
+                <span class="record-time" style="font-weight: bold; font-size: 20px; color: #2e7d32;">${formatHours(hours)}</span>
+            </div>
+        `;
+    }
+    
+    recordsGrid.innerHTML = html;
 }
 
-function parseTimeToSeconds(t) {
-    if (!t || t === "--") return null;
-    const m = t.match(/(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)/i);
-    if (!m) return null;
-
-    let hh = parseInt(m[1], 10);
-    const mm = parseInt(m[2], 10);
-    const ss = parseInt(m[3], 10);
-    const ampm = m[4].toUpperCase();
-
-    if (ampm === "AM") {
-        if (hh === 12) hh = 0;
+function updateClockButton(activeRecord) {
+    const btn = document.getElementById('btnClockInOut');
+    
+    if (activeRecord) {
+        // Currently clocked in
+        btn.innerHTML = '<span class="icon">🔴</span> CLOCK OUT';
+        btn.style.background = '#e74c3c';
     } else {
-        if (hh !== 12) hh += 12;
+        // Not clocked in
+        btn.innerHTML = '<span class="icon">🟢</span> CLOCK IN';
+        btn.style.background = '#27ae60';
+    }
+}
+
+function showAlert(message, type = 'success', alertId = 'alertBox2') {
+    const alertBox = document.getElementById(alertId);
+    if (!alertBox) return;
+    alertBox.textContent = message;
+    alertBox.className = `alert show ${type}`;
+    setTimeout(() => alertBox.classList.remove('show'), 3000);
+}
+
+// ==================== TIME IN/OUT HANDLERS ====================
+
+async function handleTimeIn() {
+    if (!currentEmployee) {
+        showAlert('No employee loaded. Please log in first.', 'error');
+        return;
     }
 
-    return hh * 3600 + mm * 60 + ss;
-}
-
-function computeHours(timeIn, timeOut) {
-    if (!timeIn || !timeOut || timeOut === "--") return "--";
-    const s1 = parseTimeToSeconds(timeIn);
-    const s2 = parseTimeToSeconds(timeOut);
-    if (s1 === null || s2 === null) return "--";
-
-    let diffSec = s2 - s1;
-    if (diffSec < 0) diffSec += 24 * 3600;
-
-    return (diffSec / 3600).toFixed(2);
-}
-
-
-// --- Main Logic Block ---
-
-if (window.location.pathname.includes("attendance.html")) {
-    const supabase = window.supabaseClient;
-    
     if (!supabase) {
-        console.error('Supabase client not initialized!');
-        showAlert('Database connection error. Please refresh the page.', 'error');
-        throw new Error('Supabase not initialized');
+        showAlert('Database connection error', 'error');
+        return;
     }
 
-    // --- DOM Elements (Must be defined inside the main block) ---
-    const dateInput = document.getElementById("attendanceDate");
-    const searchInput = document.getElementById("search");
-    const tableElement = document.getElementById("attendanceTable");
-    const totalAttendance = document.getElementById("totalAttendance");
-    const logAttendanceBtn = document.getElementById("logAttendanceBtn");
-    
-    // FIX 2: Added references for the modal elements (assuming you added the modal HTML from the previous response)
-    const attendanceLogModal = document.getElementById('attendanceLogModal');
-    const modalEmployeeIdInput = document.getElementById('modalEmployeeId');
-    const employeeNameDisplay = document.getElementById('employeeNameDisplay');
-    const modalAttendanceDateInput = document.getElementById('modalAttendanceDate');
-    const modalTimeInInput = document.getElementById('modalTimeIn');
-    const modalTimeOutInput = document.getElementById('modalTimeOut');
-    const recordIdInput = document.getElementById('recordId');
-    const attendanceLogForm = document.getElementById('attendanceLogForm');
+    const today = getCurrentDate();
+    const now = getCurrentTimestamp();
 
+    console.log('🟢 CLOCK IN ATTEMPT');
+    console.log('Employee:', currentEmployee.empId);
+    console.log('Date:', today);
+    console.log('Timestamp:', now);
 
-    let currentPage = 1;
-    const rowsPerPage = 10;
-    let filteredData = [];
-
-    const today = new Date().toISOString().split("T")[0];
-    dateInput.value = today;
-
-    // Get logged in user info
-    const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
-    const userRole = loggedInUser.role || 'Employee';
-    const userId = loggedInUser.empId || loggedInUser.employee_id || '';
-    const userPosition = loggedInUser.position || '';
-    const userName = `${loggedInUser.first_name || ''} ${loggedInUser.last_name || ''}`.trim() || loggedInUser.email || 'User';
-
-    const RESTRICTED_POSITIONS = ['Employee', 'Driver', 'Dispatcher', 'employee', 'driver', 'dispatcher'];
-    const isRestrictedUser = RESTRICTED_POSITIONS.some(p => p.toLowerCase() === userPosition.toLowerCase()) || userRole === "Employee";
-
-
-    /* ---------------------------
-       DATA FETCHING FUNCTIONS
-    --------------------------- */
-    
-    async function getEmployeeDetailsMap(empIds) {
-        if (empIds.length === 0) return {};
-        // Placeholder for employee details lookup (using simplified Supabase structure from previous analysis)
-        try {
-            const { data: employees, error: empError } = await supabase
-                .from('employees')
-                .select(`
-                    employee_id, first_name, last_name,
-                    positions!inner (
-                        position_name,
-                        departments!inner (department_name)
-                    )
-                `)
-                .in('employee_id', empIds);
-
-            if (empError) throw empError;
-
-            const map = {};
-            (employees || []).forEach(e => {
-                map[e.employee_id] = {
-                    name: `${e.first_name} ${e.last_name}`,
-                    position: e.positions?.position_name || '-',
-                    department: e.positions?.departments?.department_name || '-'
-                };
-            });
-            return map;
-        } catch (error) {
-            console.error('Error fetching employee details:', error);
-            return {};
-        }
-    }
-
-
-    async function fetchAttendanceRecords() {
-        try {
-            let query = supabase
-                .from('attendance')
-                .select('id, employee_id, date, time_in, time_out')
-                .order('date', { ascending: false })
-                .order('time_in', { ascending: false });
-
-            if (isRestrictedUser && userId) {
-                query = query.eq('employee_id', userId);
-            }
-
-            const { data: attendanceData, error: attError } = await query;
-            if (attError) throw attError;
-
-            if (!attendanceData || attendanceData.length === 0) return [];
-
-            const empIds = [...new Set(attendanceData.map(a => a.employee_id).filter(Boolean))];
-            const empDetailsMap = await getEmployeeDetailsMap(empIds);
-
-            return attendanceData.map(record => {
-                const emp = empDetailsMap[record.employee_id] || {
-                    name: 'Unknown',
-                    position: '-',
-                    department: '-'
-                };
-
-                return {
-                    recordId: record.id,
-                    id: record.employee_id,
-                    name: emp.name,
-                    department: emp.department,
-                    position: emp.position,
-                    date: record.date,
-                    timeIn: formatTime(record.time_in), // formatTime is now global
-                    timeOut: record.time_out ? formatTime(record.time_out) : '--', // formatTime is now global
-                    timeInRaw: record.time_in,
-                    timeOutRaw: record.time_out
-                };
-            });
-
-        } catch (error) {
-            console.error('Error in fetchAttendanceRecords:', error);
-            showAlert('Error loading attendance: ' + error.message, 'error');
-            return [];
-        }
-    }
-
-    /* ---------------------------
-       ATTENDANCE SAVE LOGIC
-    --------------------------- */
-
-    function getHourAndMinute(isoString) {
-        if (!isoString) return '';
-        const date = new Date(isoString);
-        const h = String(date.getHours()).padStart(2, '0');
-        const m = String(date.getMinutes()).padStart(2, '0');
-        return `${h}:${m}`;
-    }
-    
-    function convertTimeToISO(dateStr, timeStr) {
-        if (!timeStr) return null;
-        return new Date(`${dateStr}T${timeStr}:00`).toISOString();
-    }
-    
-    function calculateHours(timeInISO, timeOutISO) {
-        if (!timeInISO || !timeOutISO) return 0;
-        const start = new Date(timeInISO);
-        const end = new Date(timeOutISO);
-        const diffMs = end - start;
-        if (diffMs < 0) return 0;
-        return diffMs / (1000 * 60 * 60);
-    }
-    
-    function formatHoursDisplay(hours) {
-        if (hours === 0) return '0.00 hrs';
-        return hours.toFixed(2) + ' hrs';
-    }
-
-    async function saveAttendanceRecord(record) {
-        if (!supabase) return false;
+    try {
+        // Check if ANY attendance record exists for today
+        const allTodayRecords = await getAllTodayRecords(currentEmployee.empId);
         
-        const timeInISO = convertTimeToISO(record.date, record.timeIn);
-        const timeOutISO = record.timeOut ? convertTimeToISO(record.date, record.timeOut) : null;
-        const totalHours = calculateHours(timeInISO, timeOutISO);
+        if (allTodayRecords && allTodayRecords.length > 0) {
+            showAlert('⚠️ You already have attendance record(s) for today! Cannot clock in again.', 'warning');
+            return;
+        }
 
-        const updateData = {
-            employee_id: record.employeeId,
-            date: record.date,
-            time_in: timeInISO,
-            time_out: timeOutISO,
-            total_hours: totalHours
-        };
+        // Insert new attendance record (only ONE per day allowed)
+        const { data, error } = await supabase
+            .from('attendance')
+            .insert({
+                employee_id: currentEmployee.empId,
+                employee_uuid: currentEmployee.id,
+                date: today,
+                time_in: now,
+                time_out: null
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        console.log('✅ Time in recorded:', data);
+
+        showAlert('✅ Clocked In Successfully!', 'success');
+        await refreshRecordsDisplay();
+    } catch (error) {
+        console.error('❌ Error clocking in:', error);
+        showAlert('❌ Error recording time in: ' + error.message, 'error');
+    }
+}
+
+async function handleTimeOut() {
+    if (!currentEmployee) {
+        showAlert('No employee loaded. Please log in first.', 'error');
+        return;
+    }
+
+    if (!supabase) {
+        showAlert('Database connection error', 'error');
+        return;
+    }
+
+    const now = getCurrentTimestamp();
+    
+    console.log('🔴 CLOCK OUT ATTEMPT');
+    console.log('Employee:', currentEmployee.empId);
+    console.log('Timestamp:', now);
+
+    try {
+        const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
+
+        if (!activeRecord) {
+            showAlert('⚠️ No active session! Clock in first.', 'warning');
+            return;
+        }
+
+        // Update time_out for the active record
+        const { data, error } = await supabase
+            .from('attendance')
+            .update({ time_out: now })
+            .eq('id', activeRecord.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const duration = calculateHoursBetween(activeRecord.time_in, now);
+        console.log('✅ Time out recorded:', data);
+
+        showAlert(`✅ Clocked Out! Session: ${formatHours(duration)}`, 'success');
+        await refreshRecordsDisplay();
+    } catch (error) {
+        console.error('❌ Error clocking out:', error);
+        showAlert('❌ Error recording time out: ' + error.message, 'error');
+    }
+}
+
+// ==================== CLOCK ====================
+
+function startClock() {
+    document.getElementById('currentTime').textContent = formatTime();
+    setInterval(() => {
+        document.getElementById('currentTime').textContent = formatTime();
+    }, 1000);
+}
+
+// ==================== AUTO-LOAD LOGGED IN USER ====================
+
+async function loadLoggedInEmployee() {
+    try {
+        const loggedInUserString = localStorage.getItem('loggedInUser');
         
-        try {
-            let result;
-            if (record.id) {
-                // Update existing record
-                result = await supabase
-                    .from('attendance')
-                    .update(updateData)
-                    .eq('id', record.id)
-                    .select()
-                    .single();
-            } else {
-                // Insert new record
-                result = await supabase
-                    .from('attendance')
-                    .insert(updateData)
-                    .select()
-                    .single();
-            }
-
-            if (result.error) throw result.error;
-            
-            showAlert(`✅ Attendance record saved successfully! Hours: ${formatHoursDisplay(totalHours)}`, 'success');
-            return true;
-        } catch (error) {
-            console.error('Error saving attendance record:', error);
-            showAlert('❌ Error saving attendance: ' + error.message, 'error');
+        if (!loggedInUserString) {
+            console.warn('⚠️ No logged in user found in localStorage');
+            showAlert('Please log in to the attendance system first', 'warning');
             return false;
         }
+
+        const loggedInUser = JSON.parse(loggedInUserString);
+        console.log('📋 Logged in user data:', loggedInUser);
+
+        // Try multiple possible employee ID fields
+        const empId = loggedInUser.employee_id || loggedInUser.empId || loggedInUser.id;
+        
+        if (!empId) {
+            console.error('❌ No employee ID found in logged in user data');
+            showAlert('Employee ID not found. Please log in again.', 'error');
+            return false;
+        }
+
+        console.log('🔍 Loading employee with ID:', empId);
+        
+        const employee = await getEmployeeById(empId);
+        
+        if (!employee) {
+            console.error('❌ Employee not found in database');
+            showAlert('Employee data not found. Please contact HR.', 'error');
+            return false;
+        }
+
+        // Successfully loaded employee
+        currentEmployee = employee;
+        const fullName = `${employee.firstName} ${employee.lastName}`;
+        const photo = employee.photo || createInitialAvatar(employee.firstName, employee.lastName);
+
+        // Update UI with employee info
+        document.getElementById('profileImg').src = photo;
+        document.getElementById('displayName').textContent = fullName;
+        document.getElementById('displayPosition').textContent = employee.position;
+        document.getElementById('displayId').textContent = employee.empId;
+
+        document.getElementById('detailId').textContent = employee.empId;
+        document.getElementById('detailName').textContent = fullName;
+        document.getElementById('detailPosition').textContent = employee.position;
+        document.getElementById('detailDept').textContent = employee.department;
+
+        console.log('✅ Employee loaded successfully:', fullName);
+        
+        await refreshRecordsDisplay();
+        return true;
+
+    } catch (error) {
+        console.error('❌ Error loading logged in employee:', error);
+        showAlert('Error loading employee data: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// ==================== INITIALIZATION ====================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check if Supabase is ready
+    if (!supabase) {
+        alert('Database connection failed. Please refresh the page or check your internet connection.');
+        console.error('Supabase client not available on page load');
+        return;
     }
 
+    console.log('✅ Time In/Out System Initialized');
+    console.log('📅 Current Date:', getCurrentDate());
 
-    /* ---------------------------
-       MODAL CONTROL
-    --------------------------- */
+    document.getElementById('currentDate').textContent = formatDate();
+
+    // Set default display
+    document.getElementById('displayName').textContent = '--';
+    document.getElementById('displayPosition').textContent = '--';
+    document.getElementById('displayId').textContent = '--';
+    document.getElementById('detailId').textContent = '--';
+    document.getElementById('detailName').textContent = '--';
+    document.getElementById('detailPosition').textContent = '--';
+    document.getElementById('detailDept').textContent = '--';
+
+    // AUTO-LOAD: Load the logged-in employee automatically
+    const loaded = await loadLoggedInEmployee();
     
-    function closeLogModalHandler() {
-        // FIX 3: Null check on modal element
-        if (attendanceLogModal) {
-            attendanceLogModal.style.display = 'none';
-        }
-        if (attendanceLogForm) {
-            attendanceLogForm.reset();
-        }
+    if (!loaded) {
+        console.warn('⚠️ Could not auto-load employee. User must log in.');
     }
 
-    function openLogModal(record = null) {
-        // FIX 3: Null check on modal element and setting display
-        if (!attendanceLogModal) {
-            console.error("Modal element not found. Check ID 'attendanceLogModal'.");
-            return; 
-        }
-        attendanceLogModal.style.display = 'block'; 
-        
-        // FIX 4: Null checks on input elements before setting values
-        if (!modalEmployeeIdInput || !employeeNameDisplay || !modalAttendanceDateInput) {
-             console.error("Modal inputs not found. Cannot proceed.");
-             return;
-        }
-        
-        // --- Common Setup ---
-        modalEmployeeIdInput.value = userId;
-        employeeNameDisplay.textContent = userName;
-        modalAttendanceDateInput.value = dateInput.value; 
-        recordIdInput.value = ''; // Reset ID for new log
-        
-        if (record) {
-            // --- Edit mode (HR/Manager) ---
-            recordIdInput.value = record.recordId;
-            modalEmployeeIdInput.readOnly = true;
-            modalTimeInInput.value = getHourAndMinute(record.timeInRaw);
-            modalTimeOutInput.value = record.timeOutRaw ? getHourAndMinute(record.timeOutRaw) : '';
-            modalTimeInInput.readOnly = false;
-            modalTimeOutInput.readOnly = false;
-            employeeNameDisplay.textContent = `Editing: ${record.name}`;
-        } else {
-            // --- Clock-In/Log New mode (Universal) ---
-            modalEmployeeIdInput.readOnly = true; 
-            
-            const todayRecords = filteredData.filter(r => r.id === userId && r.date === dateInput.value);
-            const activeRecord = todayRecords.find(r => r.timeOut === '--');
+    // Button event listeners
+    const btnLogout = document.getElementById("btnLogout");
+    const btnClockInOut = document.getElementById("btnClockInOut");
 
-            if (activeRecord) {
-                // Clock Out Mode
-                recordIdInput.value = activeRecord.recordId;
-                modalTimeInInput.value = getHourAndMinute(activeRecord.timeInRaw);
-                modalTimeInInput.readOnly = true; 
-                modalTimeOutInput.value = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).substring(0, 5);
-                modalTimeOutInput.readOnly = false;
-                showAlert('Ready to Clock Out.', 'warning');
-            } else {
-                // Clock In Mode
-                modalTimeInInput.value = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).substring(0, 5);
-                modalTimeInInput.readOnly = false;
-                modalTimeOutInput.value = '';
-                modalTimeOutInput.readOnly = true; 
-                
-                // Allow HR/Manager to manually set Time Out on new record
-                if (!isRestrictedUser) {
-                     modalTimeOutInput.readOnly = false;
-                }
-            }
-        }
-    }
-
-
-    /* ---------------------------
-       UI ADJUSTMENTS / RENDERING
-    --------------------------- */
-    function adjustUIForRole() {
-        if (logAttendanceBtn) {
-            logAttendanceBtn.style.display = "block"; // Always visible as per request
-        }
+    btnLogout?.addEventListener('click', () => {
+        currentEmployee = null;
         
-        if (isRestrictedUser) {
-            if (searchInput && searchInput.parentElement) {
-                searchInput.parentElement.style.display = "none";
-            }
-            const header = document.querySelector("header h1");
-            if (header) { header.textContent = "My Attendance"; }
-            const headerDesc = document.querySelector("header p");
-            if (headerDesc) { headerDesc.textContent = "View your attendance records"; }
-            hideTimeColumns();
-        } 
-    }
-
-    function hideTimeColumns() {
-        const style = document.createElement('style');
-        style.textContent = `
-            table thead tr th:nth-child(6),
-            table thead tr th:nth-child(7),
-            table tbody tr td:nth-child(6),
-            table tbody tr td:nth-child(7) {
-                display: none !important;
-            }
+        // Clear employee display
+        document.getElementById('displayName').textContent = '--';
+        document.getElementById('displayPosition').textContent = '--';
+        document.getElementById('displayId').textContent = '--';
+        
+        // Clear details
+        document.getElementById('detailId').textContent = '--';
+        document.getElementById('detailName').textContent = '--';
+        document.getElementById('detailPosition').textContent = '--';
+        document.getElementById('detailDept').textContent = '--';
+        
+        // Clear records
+        document.querySelector('.records-grid').innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999;">
+                Please log in to view records
+            </div>
         `;
-        document.head.appendChild(style);
-    }
-    
-    // --- MAIN LOADING FUNCTION ---
-    // FIX 5: loadTable is now defined inside the main block but is available to pagination via global scope
-    async function loadTable() {
-        const selectedDate = dateInput.value;
-        const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
+        
+        // Reset button
+        const btn = document.getElementById('btnClockInOut');
+        btn.innerHTML = '<span class="icon">🟢</span> CLOCK IN';
+        btn.style.background = '#27ae60';
+        
+        showAlert('Session cleared.', 'success', 'alertBox2');
+    });
 
-        tableElement.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #999;">Loading records...</td></tr>`;
-
-        let all = await fetchAttendanceRecords();
-
-        filteredData = all.filter(r => {
-            const matchesDate = r.date === selectedDate;
-            const matchesSearch = isRestrictedUser || searchValue === '' ||
-                (r.name || "").toLowerCase().includes(searchValue) ||
-                (r.id || "").toLowerCase().includes(searchValue);
-            return matchesDate && matchesSearch;
-        });
-
-        updateTotalAttendance(filteredData.length);
-        renderPaginatedTable();
-    }
-
-    function updateTotalAttendance(count) {
-        if (!totalAttendance) return;
-        totalAttendance.textContent = isRestrictedUser ? `My Records: ${count}` : `Total Attendance: ${count}`;
-    }
-    
-    function renderPaginatedTable() {
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        renderTable(filteredData.slice(start, end));
-        renderPaginationControls();
-    }
-
-    function renderTable(list) {
-        if (!tableElement) return;
-
-        let html = "";
-        if (list.length === 0) {
-            html = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #999;">No records found for this date</td></tr>`;
-        } else {
-            list.forEach(r => {
-                const totalHours = computeHours(r.timeIn, r.timeOut);
-                const statusHtml = r.timeOut === "--" ?
-                    `<span style="color:#f39c12;font-size:12px;">⏳ In Progress</span>` :
-                    `<span style="color:#27ae60;font-size:12px;">✓ Completed</span>`;
-                
-                // If the user is HR/Manager, show the Edit button which opens the modal
-                const actionButton = !isRestrictedUser ? 
-                    `<button class="action-edit-btn" data-id="${r.recordId}" onclick="openEditModal('${r.recordId}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Edit</button>`
-                    : statusHtml; 
-
-                html += `
-                    <tr>
-                        <td>${r.id}</td>
-                        <td>${r.name}</td>
-                        <td>${r.department}</td>
-                        <td>${r.position}</td>
-                        <td>${r.date}</td>
-                        <td>${r.timeIn}</td>
-                        <td>${r.timeOut}</td>
-                        <td>
-                            ${totalHours === "--"
-                                ? '<span style="color:#999;">--</span>'
-                                : `<span style="color:#27ae60;font-weight:bold;">${totalHours} hrs</span>`
-                            }
-                        </td>
-                        <td>
-                            ${actionButton}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        tableElement.innerHTML = html;
-    }
-    
-    function renderPaginationControls() {
-        let paginationDiv = document.getElementById("paginationControls");
-
-        if (!paginationDiv) {
-            paginationDiv = document.createElement("div");
-            paginationDiv.id = "paginationControls";
-            paginationDiv.style.cssText = `margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;`;
-            const mainSection = document.querySelector(".main");
-            if (mainSection) { mainSection.appendChild(paginationDiv); }
+    btnClockInOut?.addEventListener('click', async () => {
+        if (!currentEmployee) {
+            showAlert('Please log in to attendance system first', 'warning', 'alertBox2');
+            return;
         }
         
-        if (filteredData.length === 0) { paginationDiv.innerHTML = ""; return; }
-
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
-
-        paginationDiv.innerHTML = `
-            <button style="background: #8e44ad; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; ${currentPage === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                ${currentPage === 1 ? "disabled" : ""} onclick="prevPage()">← Previous</button>
-            <span style="font-weight: bold; color: #333;">Page ${currentPage} of ${totalPages}</span>
-            <button style="background: #8e44ad; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; ${currentPage === totalPages ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                ${currentPage === totalPages ? "disabled" : ""} onclick="nextPage()">Next →</button>
-        `;
-    }
-
-    // --- Pagination Functions exposed globally ---
-    window.prevPage = function() {
-        if (currentPage > 1) { currentPage--; renderPaginatedTable(); }
-    };
-
-    window.nextPage = function() {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-        if (currentPage < totalPages) { currentPage++; renderPaginatedTable(); }
-    };
-    
-    // --- Expose Edit Function for HR/Manager (used by the table's onclick) ---
-    window.openEditModal = async function(recordId) {
-        const allRecords = await fetchAttendanceRecords();
-        const recordToEdit = allRecords.find(r => r.recordId.toString() === recordId.toString());
-        if (recordToEdit) {
-            openLogModal(recordToEdit);
+        // Check if there's an active record (no time_out)
+        const activeRecord = await getTodayActiveRecord(currentEmployee.empId);
+        
+        if (!activeRecord) {
+            // No active session, so clock in
+            await handleTimeIn();
         } else {
-            showAlert('Record not found.', 'error');
-        }
-    }
-
-
-    /* ---------------------------
-       EVENT LISTENERS
-    --------------------------- */
-
-    if (logAttendanceBtn) {
-        logAttendanceBtn.addEventListener("click", () => {
-            openLogModal(null); // Opens modal for new log (clock in/out)
-        });
-    }
-
-    const closeLogModalButton = document.getElementById('closeLogModal');
-    const cancelLogButton = document.getElementById('cancelLog');
-
-    if (closeLogModalButton) closeLogModalButton.addEventListener('click', closeLogModalHandler);
-    if (cancelLogButton) cancelLogButton.addEventListener('click', closeLogModalHandler);
-    
-    // Close modal if user clicks outside of it
-    window.addEventListener('click', (e) => {
-        if (e.target === attendanceLogModal) {
-            closeLogModalHandler();
+            // Active session exists, so clock out
+            await handleTimeOut();
         }
     });
 
-    if (attendanceLogForm) {
-        attendanceLogForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const recordData = {
-                id: recordIdInput.value || null,
-                employeeId: modalEmployeeIdInput.value.trim(),
-                date: modalAttendanceDateInput.value,
-                timeIn: modalTimeInInput.value,
-                timeOut: modalTimeOutInput.value
-            };
-
-            if (!recordData.timeIn) { showAlert('Time In is required.', 'error'); return; }
-            if (recordData.timeOut && (new Date(recordData.date + 'T' + recordData.timeIn) >= new Date(recordData.date + 'T' + recordData.timeOut))) {
-                 showAlert('Time Out must be later than Time In.', 'error');
-                 return;
-            }
-
-            if (await saveAttendanceRecord(recordData)) {
-                closeLogModalHandler();
-                loadTable(); 
-            }
-        });
-    }
+    startClock();
     
-    if (dateInput) { dateInput.addEventListener("change", () => { currentPage = 1; loadTable(); }); }
-    if (searchInput) { searchInput.addEventListener("input", () => { currentPage = 1; loadTable(); }); }
-
-    /* ---------------------------
-       INITIALIZATION
-    --------------------------- */
-    adjustUIForRole();
-    loadTable();
-}
+    // Auto-refresh records every 30 seconds if logged in
+    setInterval(async () => {
+        if (currentEmployee) {
+            await refreshRecordsDisplay();
+        }
+    }, 30000);
+});

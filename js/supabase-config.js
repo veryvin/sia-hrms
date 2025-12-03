@@ -3,11 +3,7 @@
 // ===================================================
 
 const SUPABASE_URL = 'https://iwaibzskwxkonojilfhg.supabase.co';
-<<<<<<< HEAD
 const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YWlienNrd3hrb25vamlsZmhnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjkyMDY1MCwiZXhwIjoyMDc4NDk2NjUwfQ.9pTCt8OxOlTv4wUUY2Fg8T8zRCmL4bf4Jkh43yEOm8E';
-=======
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YWlienNrd3hrb25vamlsZmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MjA2NTAsImV4cCI6MjA3ODQ5NjY1MH0.dKa2WvAXCKrtzNY9UD2FqQSaRfhm3WRCbZtQuJ9xxXE';
->>>>>>> 3796e1570e6ef80fac5bd98412c602b93526f923
 
 // Initialize Supabase client
 // The Supabase CDN exposes the global 'supabase' object with createClient method

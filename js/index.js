@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===================================================
-    // LOGIN HANDLER - SAFE QUERY APPROACH
+    // LOGIN HANDLER - COMPLETELY REWRITTEN
     // ===================================================
     loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -76,28 +76,34 @@ document.addEventListener("DOMContentLoaded", () => {
         errorMessage.style.display = "none";
 
         try {
-            // ===== STEP 1: Get Employee Record =====
-            const { data: employee, error: empError } = await supabase
+            // ===== STEP 1: Get Employee Record (using select without single) =====
+            const { data: employees, error: empError } = await supabase
                 .from('employees')
                 .select('*')
-                .eq('employee_id', employeeId)
-                .single();
+                .eq('employee_id', employeeId);
 
-            console.log("📊 Employee found:", employee);
+            // Check for database error
             if (empError) {
-                console.log("❌ Employee error:", empError);
+                console.log("❌ Database error:", empError);
+                errorMessage.textContent = "❌ Database error. Please try again.";
+                errorMessage.style.display = "block";
+                return;
             }
 
-            if (empError || !employee) {
+            // Check if any employees were found
+            if (!employees || employees.length === 0) {
                 console.log("⚠️ Employee not found in database");
                 errorMessage.textContent = "❌ Invalid Employee ID or Password.";
                 errorMessage.style.display = "block";
                 return;
             }
 
+            // Get the first (and should be only) employee
+            const employee = employees[0];
+            console.log("📊 Employee found:", employee);
+
             // ===== STEP 2: Verify Password =====
-            console.log("🔑 Stored password:", employee.password);
-            console.log("🔑 Entered password:", pwd);
+            console.log("🔑 Verifying password...");
 
             if (employee.password !== pwd) {
                 console.log("⚠️ Password mismatch!");
@@ -117,53 +123,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("🔍 Fetching position for position_id:", employee.position_id);
 
                 // Get position details
-                const { data: position, error: posError } = await supabase
+                const { data: positions, error: posError } = await supabase
                     .from('positions')
                     .select('position_name, department_id, role_id')
-                    .eq('id', employee.position_id)
-                    .single();
+                    .eq('id', employee.position_id);
 
-                console.log("📊 Position data:", position);
                 if (posError) {
                     console.log("❌ Position error:", posError);
-                }
-
-                if (!posError && position) {
+                } else if (positions && positions.length > 0) {
+                    const position = positions[0];
+                    console.log("📊 Position data:", position);
                     positionName = position.position_name || 'Unassigned';
 
                     // Get department name
                     if (position.department_id) {
-                        const { data: dept, error: deptError } = await supabase
+                        const { data: depts, error: deptError } = await supabase
                             .from('departments')
                             .select('department_name')
-                            .eq('id', position.department_id)
-                            .single();
+                            .eq('id', position.department_id);
                         
-                        console.log("📊 Department data:", dept);
                         if (deptError) {
                             console.log("❌ Department error:", deptError);
-                        }
-                        
-                        if (!deptError && dept) {
-                            departmentName = dept.department_name;
+                        } else if (depts && depts.length > 0) {
+                            console.log("📊 Department data:", depts[0]);
+                            departmentName = depts[0].department_name;
                         }
                     }
 
                     // Get role name
                     if (position.role_id) {
-                        const { data: roleData, error: roleError } = await supabase
+                        const { data: roles, error: roleError } = await supabase
                             .from('roles')
                             .select('role_name')
-                            .eq('id', position.role_id)
-                            .single();
+                            .eq('id', position.role_id);
                         
-                        console.log("📊 Role data:", roleData);
                         if (roleError) {
                             console.log("❌ Role error:", roleError);
-                        }
-                        
-                        if (!roleError && roleData) {
-                            role = roleData.role_name;
+                        } else if (roles && roles.length > 0) {
+                            console.log("📊 Role data:", roles[0]);
+                            role = roles[0].role_name;
                         }
                     }
                 } else {

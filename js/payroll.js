@@ -636,67 +636,229 @@ window.deletePayroll = async function(id) {
   }
 };
 
-  // ==================== VIEW DETAILS ====================
-  window.showPayrollDetails = async function(id) {
-    const p = payrollRecords.find(x => x.id === id);
-    if (!p || !detailsModal || !detailsContent) return;
+ // ==================== VIEW DETAILS WITH FULL TRANSPARENCY ====================
+window.showPayrollDetails = async function(id) {
+  const p = payrollRecords.find(x => x.id === id);
+  if (!p || !detailsModal || !detailsContent) return;
 
-    const employees = await fetchAllEmployees();
-    const emp = employees.find(e => e.id === p.employee_id);
-    const empName = emp ? `${emp.first_name} ${emp.last_name}` : "N/A";
-    const empNo = emp ? emp.employee_id : "N/A";
+  const employees = await fetchAllEmployees();
+  const emp = employees.find(e => e.id === p.employee_id);
+  const empName = emp ? `${emp.first_name} ${emp.last_name}` : "N/A";
+  const empNo = emp ? emp.employee_id : "N/A";
+  const positionName = await getPositionName(emp?.position_id);
+  const monthlySalary = parseFloat(emp?.salary) || 17000;
 
-    // Fetch attendance to get days worked
-    const attendanceRecords = await fetchAttendanceForEmployee(
-      empNo,
-      p.pay_period_start, 
-      p.pay_period_end
-    );
-    const uniqueDates = new Set(attendanceRecords.map(r => r.date));
-    const daysWorked = uniqueDates.size;
+  // Fetch attendance to get days worked
+  const attendanceRecords = await fetchAttendanceForEmployee(
+    empNo,
+    p.pay_period_start, 
+    p.pay_period_end
+  );
+  const uniqueDates = new Set(attendanceRecords.map(r => r.date));
+  const daysWorked = uniqueDates.size;
 
-    detailsContent.innerHTML = `
-      <div style="padding:20px;">
-        <div style="margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #e5e7eb;">
-          <h3 style="margin:0 0 10px 0;color:#1f2937;">Payroll Receipt</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14px;">
-            <div><strong>Employee No:</strong> ${empNo}</div>
-            <div><strong>Employee Name:</strong> ${empName}</div>
-            <div><strong>Period:</strong> ${p.pay_period_start} to ${p.pay_period_end}</div>
-            <div><strong>Days Worked:</strong> ${daysWorked} days</div>
-            <div><strong>Processed Date:</strong> ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ""}</div>
+  // Calculate breakdown
+  const dailyRate = PayrollCalculator.calculateDailyRate(monthlySalary);
+  const basePay = Number(p.base_pay || 0);
+  
+  // Extract individual deductions from total
+  const grossPay = basePay;
+  const sss = PayrollCalculator.calculateSSS(grossPay);
+  const philHealth = PayrollCalculator.calculatePhilHealth(grossPay);
+  const pagibig = PayrollCalculator.calculatePagIBIG(grossPay);
+  const wtax = Number(p.tax || 0);
+  const totalDeductions = Number(p.deductions || 0);
+  const netPay = Number(p.net_pay || 0);
+
+  detailsContent.innerHTML = `
+    <div style="padding: 25px; font-family: 'Segoe UI', system-ui, sans-serif;">
+      <!-- Header Section -->
+      <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 3px solid #e5e7eb;">
+        <h3 style="margin: 0 0 5px 0; color: #111827; font-size: 20px; font-weight: 700;">
+          Payroll Receipt
+        </h3>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          Complete breakdown of earnings and deductions
+        </p>
+      </div>
+
+      <!-- Employee Information -->
+      <div style="background: #f9fafb; padding: 18px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #e5e7eb;">
+        <h4 style="margin: 0 0 15px 0; color: #374151; font-size: 15px; font-weight: 600; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">👤</span> Employee Information
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280; font-weight: 500;">Employee No:</span>
+            <span style="color: #111827; font-weight: 600;">${empNo}</span>
           </div>
-        </div>
-
-        <div style="margin-bottom:20px;">
-          <h4 style="margin:0 0 10px 0;color:#059669;">Earnings</h4>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px;">
-            <div>Base Pay (${daysWorked} days):</div>
-            <div style="text-align:right;">₱${Number(p.base_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280; font-weight: 500;">Employee Name:</span>
+            <span style="color: #111827; font-weight: 600;">${empName}</span>
           </div>
-        </div>
-
-        <div style="margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #e5e7eb;">
-          <h4 style="margin:0 0 10px 0;color:#dc2626;">Deductions</h4>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px;">
-            <div>Withholding Tax:</div>
-            <div style="text-align:right;">₱${Number(p.tax || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</div>
-            <div><strong>Total Deductions:</strong></div>
-            <div style="text-align:right;"><strong>₱${Number(p.deductions || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</strong></div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280; font-weight: 500;">Position:</span>
+            <span style="color: #111827; font-weight: 600;">${positionName}</span>
           </div>
-        </div>
-
-        <div style="background:#f0fdf4;padding:15px;border-radius:8px;border:2px solid #10b981;">
-          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;">
-            <div style="font-size:18px;font-weight:bold;color:#065f46;">NET PAY:</div>
-            <div style="font-size:24px;font-weight:bold;color:#059669;">₱${Number(p.net_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280; font-weight: 500;">Status:</span>
+            <span style="color: #111827; font-weight: 600;">${emp?.employment_status || 'N/A'}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280; font-weight: 500;">Monthly Salary:</span>
+            <span style="color: #111827; font-weight: 600;">₱${monthlySalary.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280; font-weight: 500;">Daily Rate:</span>
+            <span style="color: #111827; font-weight: 600;">₱${dailyRate.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
           </div>
         </div>
       </div>
-    `;
-    
-    detailsModal.style.display = "flex";
-  };
+
+      <!-- Pay Period Information -->
+      <div style="background: #eff6ff; padding: 18px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #bfdbfe;">
+        <h4 style="margin: 0 0 15px 0; color: #1e40af; font-size: 15px; font-weight: 600; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">📅</span> Pay Period Details
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #1e40af; font-weight: 500;">Period Start:</span>
+            <span style="color: #111827; font-weight: 600;">${p.pay_period_start}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #1e40af; font-weight: 500;">Period End:</span>
+            <span style="color: #111827; font-weight: 600;">${p.pay_period_end}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #1e40af; font-weight: 500;">Days Worked:</span>
+            <span style="color: #111827; font-weight: 600;">${daysWorked} days</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #1e40af; font-weight: 500;">Processed Date:</span>
+            <span style="color: #111827; font-weight: 600;">${p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A'}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Earnings Breakdown -->
+      <div style="background: #f0fdf4; padding: 18px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #bbf7d0;">
+        <h4 style="margin: 0 0 15px 0; color: #15803d; font-size: 15px; font-weight: 600; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">💰</span> Earnings Breakdown
+        </h4>
+        <div style="font-size: 14px;">
+          <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dcfce7;">
+            <span style="color: #15803d; font-weight: 500;">Base Pay (${daysWorked} days × ₱${dailyRate.toLocaleString("en-PH", {minimumFractionDigits: 2})}):</span>
+            <span style="color: #111827; font-weight: 600;">₱${basePay.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dcfce7;">
+            <span style="color: #15803d; font-weight: 500;">Overtime Pay:</span>
+            <span style="color: #111827; font-weight: 600;">₱${Number(p.overtime_pay || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dcfce7;">
+            <span style="color: #15803d; font-weight: 500;">Bonuses & Allowances:</span>
+            <span style="color: #111827; font-weight: 600;">₱${Number(p.bonus || 0).toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 15px 0 0 0; margin-top: 10px; border-top: 2px solid #16a34a;">
+            <span style="color: #15803d; font-weight: 700; font-size: 15px;">GROSS PAY:</span>
+            <span style="color: #16a34a; font-weight: 700; font-size: 16px;">₱${grossPay.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deductions Breakdown -->
+      <div style="background: #fef2f2; padding: 18px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #fecaca;">
+        <h4 style="margin: 0 0 15px 0; color: #991b1b; font-size: 15px; font-weight: 600; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">📉</span> Deductions Breakdown
+        </h4>
+        <div style="font-size: 14px;">
+          <!-- Government Contributions -->
+          <div style="margin-bottom: 15px;">
+            <p style="margin: 0 0 10px 0; color: #991b1b; font-weight: 600; font-size: 13px;">
+              Government Contributions:
+            </p>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fee2e2;">
+              <span style="color: #7f1d1d; font-weight: 500; padding-left: 15px;">
+                SSS (Social Security System) - 5%:
+              </span>
+              <span style="color: #111827; font-weight: 600;">₱${sss.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fee2e2;">
+              <span style="color: #7f1d1d; font-weight: 500; padding-left: 15px;">
+                PhilHealth (Philippine Health Insurance) - 2.5%:
+              </span>
+              <span style="color: #111827; font-weight: 600;">₱${philHealth.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fee2e2;">
+              <span style="color: #7f1d1d; font-weight: 500; padding-left: 15px;">
+                Pag-IBIG (Home Development Mutual Fund):
+              </span>
+              <span style="color: #111827; font-weight: 600;">₱${pagibig.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+
+          <!-- Tax -->
+          <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #fee2e2;">
+            <span style="color: #991b1b; font-weight: 500;">
+              Withholding Tax (Income Tax):
+            </span>
+            <span style="color: #111827; font-weight: 600;">₱${wtax.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+
+          <!-- Total Deductions -->
+          <div style="display: flex; justify-content: space-between; padding: 15px 0 0 0; margin-top: 10px; border-top: 2px solid #dc2626;">
+            <span style="color: #991b1b; font-weight: 700; font-size: 15px;">TOTAL DEDUCTIONS:</span>
+            <span style="color: #dc2626; font-weight: 700; font-size: 16px;">₱${totalDeductions.toLocaleString("en-PH", {minimumFractionDigits: 2})}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Pay (Final Amount) -->
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="margin: 0 0 5px 0; color: #d1fae5; font-size: 14px; font-weight: 500;">
+              Net Pay (Take Home)
+            </p>
+            <p style="margin: 0; color: white; font-size: 32px; font-weight: 700; letter-spacing: -1px;">
+              ₱${netPay.toLocaleString("en-PH", {minimumFractionDigits: 2})}
+            </p>
+          </div>
+          <div style="background: rgba(255, 255, 255, 0.2); padding: 15px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 30px;">💵</span>
+          </div>
+        </div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.3);">
+          <p style="margin: 0; color: #d1fae5; font-size: 12px; text-align: center;">
+            Gross Pay (₱${grossPay.toLocaleString("en-PH", {minimumFractionDigits: 2})}) - Deductions (₱${totalDeductions.toLocaleString("en-PH", {minimumFractionDigits: 2})})
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer Note -->
+      <div style="margin-top: 20px; padding: 15px; background: #fefce8; border-left: 4px solid #eab308; border-radius: 6px;">
+        <p style="margin: 0; font-size: 13px; color: #854d0e; line-height: 1.6;">
+          <strong>📌 Note:</strong> This receipt is an official record of your payroll for the specified period. 
+          All government contributions (SSS, PhilHealth, Pag-IBIG) and withholding tax have been properly deducted 
+          and remitted as per Philippine labor laws.
+        </p>
+      </div>
+
+      <!-- Calculation Formula Note -->
+      <div style="margin-top: 15px; padding: 15px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;">
+        <p style="margin: 0 0 8px 0; font-size: 13px; color: #0c4a6e; font-weight: 600;">
+          📊 Calculation Formula:
+        </p>
+        <p style="margin: 0; font-size: 12px; color: #0369a1; line-height: 1.6;">
+          <strong>Daily Rate:</strong> Monthly Salary ÷ 22 working days<br>
+          <strong>Base Pay:</strong> Daily Rate × Days Worked (${daysWorked} days)<br>
+          <strong>Net Pay:</strong> Gross Pay - (SSS + PhilHealth + Pag-IBIG + Withholding Tax)
+        </p>
+      </div>
+    </div>
+  `;
+  
+  detailsModal.style.display = "flex";
+};
 
   // ==================== MODAL CONTROLS ====================
   closeDetailsModal?.addEventListener("click", () => detailsModal.style.display = "none");

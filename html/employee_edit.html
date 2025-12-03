@@ -97,9 +97,30 @@
           <div class="form-group"><label>Gender</label><input type="text" id="gender" required></div>
           <div class="form-group"><label>Phone</label><input type="text" id="phone" required></div>
           <div class="form-group"><label>Address</label><input type="text" id="address" required></div>
-          <div class="form-group"><label>Position</label><input type="text" id="position" required></div>
-          <div class="form-group"><label>Department</label><input type="text" id="department" required></div>
-          <div class="form-group"><label>Date Hired</label><input type="date" id="dateHired" required></div>
+        <div class="form-group">
+          <label for="role">Position</label>
+          <select id="role" placeholder="Select Position" required >
+            <option value="" disabled selected>Select Position</option>
+            <option value="Employee">Employee</option>
+            <option value="Manager">Manager</option>
+            <option value="Driver">Driver</option>
+            <option value="Dispatcher">Dispatcher</option>
+
+          </select>
+        </div>
+        <div class="form-group">
+                  <label for="department">Department</label>
+                  <select id="role" placeholder="Select Department" required >
+                    <option value="" disabled selected>Select Department</option>
+                    <option value="IT Department">IT Department</option>
+                    <option value="Employee">Employee</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Driver">Driver</option>
+                    <option value="Dispatcher">Dispatcher</option>
+
+                  </select>
+        </div>          
+        <div class="form-group"><label>Date Hired</label><input type="date" id="dateHired" required></div>
 
           <div class="form-group">
             <label>Employment Status</label>

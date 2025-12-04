@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       return `
-        <div style="padding: 14px; margin-bottom: 12px; border-left: 4px solid ${statusColor}; background: #f9fafb; border-radius: 8px; transition: all 0.2s;">
+        <div style="padding: 14px; margin-bottom: 12px; border-left: 4px solid ${statusColor}; background: #f9fafb; border-radius: 8px; transition: all 0.2s; cursor: pointer;" onclick="viewLeaveDetails('${leave.id}')">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <strong style="color: #111827;">${empName}</strong>
             <span style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${statusColor}20; color: ${statusColor};">
@@ -342,6 +342,187 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.innerHTML = html;
     console.log("✅ Recent leave requests rendered");
   }
+
+  // ==================== VIEW LEAVE DETAILS MODAL ====================
+  
+  window.viewLeaveDetails = async function(leaveId) {
+    try {
+      console.log("🔍 Fetching leave details for ID:", leaveId);
+      
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select(`
+          *,
+          employees(
+            employee_id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            positions(
+              position_name,
+              departments(department_name)
+            )
+          )
+        `)
+        .eq('id', leaveId)
+        .single();
+      
+      if (error) throw error;
+      
+      const leave = data;
+      const emp = leave.employees;
+      const empName = emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown';
+      const empId = emp?.employee_id || leave.employee_id;
+      const dept = emp?.positions?.departments?.department_name || 'N/A';
+      const position = emp?.positions?.position_name || 'N/A';
+      const email = emp?.email || 'N/A';
+      const phone = emp?.phone || 'N/A';
+      
+      let statusColor = '';
+      let statusBg = '';
+      
+      if (leave.status === 'Pending') {
+        statusColor = '#f59e0b';
+        statusBg = '#fef3c7';
+      } else if (leave.status === 'Approved') {
+        statusColor = '#10b981';
+        statusBg = '#d1fae5';
+      } else if (leave.status === 'Rejected') {
+        statusColor = '#ef4444';
+        statusBg = '#fee2e2';
+      }
+      
+      const modalHTML = `
+        <div id="leaveDetailsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+          <div style="background: white; border-radius: 16px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #2d6e4e 0%, #16a34a 100%); padding: 24px; border-radius: 16px 16px 0 0; color: white;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.5rem;">📋 Leave Request Details</h2>
+                <button onclick="closeLeaveDetailsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center;">✕</button>
+              </div>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 24px;">
+              
+              <!-- Status Badge -->
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="display: inline-block; padding: 8px 24px; border-radius: 20px; font-size: 14px; font-weight: 700; background: ${statusBg}; color: ${statusColor};">
+                  ${leave.status.toUpperCase()}
+                </span>
+              </div>
+              
+              <!-- Employee Info -->
+              <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #2d6e4e;">
+                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  👤 Employee Information
+                </h3>
+                <div style="display: grid; gap: 12px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Employee Name:</span>
+                    <span style="color: #111827; font-weight: 600;">${empName}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Employee ID:</span>
+                    <span style="color: #111827; font-weight: 600;">${empId}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Department:</span>
+                    <span style="color: #111827; font-weight: 600;">${dept}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Position:</span>
+                    <span style="color: #111827; font-weight: 600;">${position}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Email:</span>
+                    <span style="color: #111827; font-weight: 600;">${email}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Phone:</span>
+                    <span style="color: #111827; font-weight: 600;">${phone}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Leave Info -->
+              <div style="background: #eff6ff; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  📅 Leave Information
+                </h3>
+                <div style="display: grid; gap: 12px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Leave Type:</span>
+                    <span style="color: #111827; font-weight: 600;">${leave.leave_type}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Start Date:</span>
+                    <span style="color: #111827; font-weight: 600;">${leave.start_date}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">End Date:</span>
+                    <span style="color: #111827; font-weight: 600;">${leave.end_date}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Number of Days:</span>
+                    <span style="color: #111827; font-weight: 600;">${leave.number_of_days} day(s)</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-weight: 600;">Submitted:</span>
+                    <span style="color: #111827; font-weight: 600;">${new Date(leave.created_at).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Reason -->
+              ${leave.comments ? `
+              <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 4px solid #f59e0b;">
+                <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  💬 Reason for Leave
+                </h3>
+                <p style="margin: 0; color: #374151; line-height: 1.6; font-style: italic;">
+                  "${leave.comments}"
+                </p>
+              </div>
+              ` : ''}
+              
+              <!-- Close Button -->
+              <div style="margin-top: 24px; text-align: center;">
+                <button onclick="closeLeaveDetailsModal()" style="padding: 12px 32px; background: #2d6e4e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">
+                  Close
+                </button>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Remove existing modal if any
+      const existingModal = document.getElementById('leaveDetailsModal');
+      if (existingModal) existingModal.remove();
+      
+      // Add new modal to body
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      console.log("✅ Leave details modal displayed");
+      
+    } catch (error) {
+      console.error("❌ Error fetching leave details:", error);
+      alert("Error loading leave details: " + error.message);
+    }
+  };
+  
+  window.closeLeaveDetailsModal = function() {
+    const modal = document.getElementById('leaveDetailsModal');
+    if (modal) {
+      modal.remove();
+      console.log("✅ Leave details modal closed");
+    }
+  };
 
   // ==================== RENDER DEPARTMENT DISTRIBUTION ====================
   
@@ -366,7 +547,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (unassignedCount > 0) {
       const percentage = ((unassignedCount / total) * 100).toFixed(1);
       html += `
-        <div class="dept" style="margin-bottom: 16px; padding: 14px; background: #f9fafb; border-radius: 10px;">
+        <div class="dept" style="margin-bottom: 16px; padding: 14px; background: #f9fafb; border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'">
           <span style="display: block; font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 8px;">
             Unassigned
           </span>
@@ -390,7 +571,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       colorIndex++;
 
       html += `
-        <div class="dept" style="margin-bottom: 16px; padding: 14px; background: #f9fafb; border-radius: 10px;">
+        <div class="dept" style="margin-bottom: 16px; padding: 14px; background: #f9fafb; border-radius: 10px; cursor: pointer; transition: all 0.2s;" onclick="viewDepartmentDetails('${deptName}')" onmouseover="this.style.background='#f3f4f6'; this.style.transform='translateX(4px)'" onmouseout="this.style.background='#f9fafb'; this.style.transform='translateX(0)'">
           <span style="display: block; font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 8px;">
             ${deptName}
           </span>
@@ -415,6 +596,123 @@ document.addEventListener("DOMContentLoaded", async () => {
     container.innerHTML = html;
     console.log("✅ Department distribution rendered");
   }
+
+  // ==================== VIEW DEPARTMENT DETAILS ====================
+  
+  window.viewDepartmentDetails = async function(departmentName) {
+    try {
+      console.log("🔍 Fetching employees in department:", departmentName);
+      
+      const { data, error } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          positions!employees_position_id_fkey(
+            position_name,
+            departments(department_name)
+          )
+        `);
+      
+      if (error) throw error;
+      
+      // Filter employees by department
+      const deptEmployees = data.filter(emp => 
+        emp.positions?.departments?.department_name === departmentName
+      );
+      
+      if (deptEmployees.length === 0) {
+        alert(`No employees found in ${departmentName}`);
+        return;
+      }
+      
+      const employeeRows = deptEmployees.map((emp, index) => `
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 12px; text-align: center;">${index + 1}</td>
+          <td style="padding: 12px;">${emp.employee_id}</td>
+          <td style="padding: 12px; font-weight: 600;">${emp.first_name} ${emp.last_name}</td>
+          <td style="padding: 12px;">${emp.positions?.position_name || 'N/A'}</td>
+          <td style="padding: 12px;">${emp.email || 'N/A'}</td>
+          <td style="padding: 12px;">${emp.phone || 'N/A'}</td>
+          <td style="padding: 12px; text-align: center;">
+            <span style="padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${emp.employment_status === 'Regular' ? '#d1fae5' : '#fef3c7'}; color: ${emp.employment_status === 'Regular' ? '#065f46' : '#92400e'};">
+              ${emp.employment_status || 'N/A'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+      
+      const modalHTML = `
+        <div id="deptDetailsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+          <div style="background: white; border-radius: 16px; width: 95%; max-width: 1200px; max-height: 90vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #2d6e4e 0%, #16a34a 100%); padding: 24px; color: white;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                    🏢 ${departmentName}
+                  </h2>
+                  <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 0.95rem;">
+                    ${deptEmployees.length} employee${deptEmployees.length !== 1 ? 's' : ''} in this department
+                  </p>
+                </div>
+                <button onclick="closeDeptDetailsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
+              </div>
+            </div>
+            
+            <!-- Table Container -->
+            <div style="flex: 1; overflow-y: auto; padding: 24px;">
+              <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                <thead>
+                  <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                    <th style="padding: 14px; text-align: center; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">#</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Employee ID</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Name</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Position</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Email</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Phone</th>
+                    <th style="padding: 14px; text-align: center; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${employeeRows}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Footer -->
+            <div style="padding: 20px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; text-align: center;">
+              <button onclick="closeDeptDetailsModal()" style="padding: 12px 32px; background: #2d6e4e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">
+                Close
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      `;
+      
+      // Remove existing modal if any
+      const existingModal = document.getElementById('deptDetailsModal');
+      if (existingModal) existingModal.remove();
+      
+      // Add new modal to body
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      console.log(`✅ Department details modal displayed for ${departmentName}`);
+      
+    } catch (error) {
+      console.error("❌ Error fetching department details:", error);
+      alert("Error loading department details: " + error.message);
+    }
+  };
+  
+  window.closeDeptDetailsModal = function() {
+    const modal = document.getElementById('deptDetailsModal');
+    if (modal) {
+      modal.remove();
+      console.log("✅ Department details modal closed");
+    }
+  };
 
   // ==================== REALTIME SUBSCRIPTIONS ====================
   
@@ -460,4 +758,219 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log('🚀 Dashboard initializing...');
   await updateDashboardCards();
   console.log('✅ Dashboard ready!');
+  
+  // ==================== VIEW ALL BUTTONS ====================
+  
+  // Add click handlers for "View All" links
+  document.addEventListener('click', (e) => {
+    // View All for Leave Requests
+    if (e.target.classList.contains('view-all') && e.target.closest('.panel')?.querySelector('#leaveRequestsList')) {
+      e.preventDefault();
+      window.location.href = 'leaverequest.html';
+    }
+    
+    // View Details for Department Distribution
+    if (e.target.classList.contains('view-all') && e.target.closest('.panel')?.querySelector('#departmentDistribution')) {
+      e.preventDefault();
+      viewAllDepartments();
+    }
+  });
+  
+  // ==================== VIEW ALL DEPARTMENTS ====================
+  
+  window.viewAllDepartments = async function() {
+    try {
+      console.log("🔍 Fetching all departments and employees...");
+      
+      const { data, error } = await supabase
+        .from('employees')
+        .select(`
+          *,
+          positions!employees_position_id_fkey(
+            position_name,
+            departments(department_name)
+          )
+        `)
+        .order('first_name', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Group employees by department
+      const deptGroups = {};
+      let unassigned = [];
+      
+      data.forEach(emp => {
+        const deptName = emp.positions?.departments?.department_name;
+        if (deptName) {
+          if (!deptGroups[deptName]) deptGroups[deptName] = [];
+          deptGroups[deptName].push(emp);
+        } else {
+          unassigned.push(emp);
+        }
+      });
+      
+      // Generate HTML for each department
+      let departmentSections = '';
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+      let colorIndex = 0;
+      
+      Object.entries(deptGroups).forEach(([deptName, employees]) => {
+        const color = colors[colorIndex % colors.length];
+        colorIndex++;
+        
+        const employeeRows = employees.map((emp, index) => `
+          <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">
+            <td style="padding: 12px; text-align: center; color: #6b7280;">${index + 1}</td>
+            <td style="padding: 12px; font-weight: 600; color: #111827;">${emp.employee_id}</td>
+            <td style="padding: 12px; font-weight: 600; color: #111827;">${emp.first_name} ${emp.last_name}</td>
+            <td style="padding: 12px; color: #374151;">${emp.positions?.position_name || 'N/A'}</td>
+            <td style="padding: 12px; color: #374151;">${emp.email || 'N/A'}</td>
+            <td style="padding: 12px; color: #374151;">${emp.phone || 'N/A'}</td>
+            <td style="padding: 12px; text-align: center;">
+              <span style="padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ${emp.employment_status === 'Regular' ? '#d1fae5' : '#fef3c7'}; color: ${emp.employment_status === 'Regular' ? '#065f46' : '#92400e'};">
+                ${emp.employment_status || 'N/A'}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+        
+        departmentSections += `
+          <div style="margin-bottom: 32px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="background: ${color}; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; color: white; font-size: 1.2rem; font-weight: 700;">
+                🏢 ${deptName}
+              </h3>
+              <span style="background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; color: white; font-weight: 600; font-size: 0.9rem;">
+                ${employees.length} employee${employees.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; background: white;">
+                <thead>
+                  <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                    <th style="padding: 14px; text-align: center; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">#</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Employee ID</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Name</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Position</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Email</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Phone</th>
+                    <th style="padding: 14px; text-align: center; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${employeeRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      });
+      
+      // Add unassigned section if exists
+      if (unassigned.length > 0) {
+        const unassignedRows = unassigned.map((emp, index) => `
+          <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">
+            <td style="padding: 12px; text-align: center; color: #6b7280;">${index + 1}</td>
+            <td style="padding: 12px; font-weight: 600; color: #111827;">${emp.employee_id}</td>
+            <td style="padding: 12px; font-weight: 600; color: #111827;">${emp.first_name} ${emp.last_name}</td>
+            <td style="padding: 12px; color: #374151;">N/A</td>
+            <td style="padding: 12px; color: #374151;">${emp.email || 'N/A'}</td>
+            <td style="padding: 12px; color: #374151;">${emp.phone || 'N/A'}</td>
+            <td style="padding: 12px; text-align: center;">
+              <span style="padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #fee2e2; color: #991b1b;">
+                Unassigned
+              </span>
+            </td>
+          </tr>
+        `).join('');
+        
+        departmentSections += `
+          <div style="margin-bottom: 32px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="background: #94a3b8; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; color: white; font-size: 1.2rem; font-weight: 700;">
+                ⚠️ Unassigned Employees
+              </h3>
+              <span style="background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; color: white; font-weight: 600; font-size: 0.9rem;">
+                ${unassigned.length} employee${unassigned.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; background: white;">
+                <thead>
+                  <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                    <th style="padding: 14px; text-align: center; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">#</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Employee ID</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Name</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Position</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Email</th>
+                    <th style="padding: 14px; text-align: left; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Phone</th>
+                    <th style="padding: 14px; text-align: center; font-weight: 700; color: #374151; font-size: 0.85rem; text-transform: uppercase;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${unassignedRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+      
+      const modalHTML = `
+        <div id="allDepartmentsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+          <div style="background: white; border-radius: 16px; width: 98%; max-width: 1400px; max-height: 95vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #2d6e4e 0%, #16a34a 100%); padding: 24px; color: white;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2 style="margin: 0; font-size: 1.8rem; font-weight: 700;">
+                    🏢 All Departments Overview
+                  </h2>
+                  <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 1rem;">
+                    Complete breakdown of employees by department
+                  </p>
+                </div>
+                <button onclick="closeAllDepartmentsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
+              </div>
+            </div>
+            
+            <!-- Content -->
+            <div style="flex: 1; overflow-y: auto; padding: 32px;">
+              ${departmentSections}
+            </div>
+            
+            <!-- Footer -->
+            <div style="padding: 20px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; text-align: center;">
+              <button onclick="closeAllDepartmentsModal()" style="padding: 12px 40px; background: #2d6e4e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#2d6e4e'">
+                Close
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      `;
+      
+      // Remove existing modal if any
+      const existingModal = document.getElementById('allDepartmentsModal');
+      if (existingModal) existingModal.remove();
+      
+      // Add new modal to body
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      console.log("✅ All departments modal displayed");
+      
+    } catch (error) {
+      console.error("❌ Error fetching all departments:", error);
+      alert("Error loading departments: " + error.message);
+    }
+  };
+  
+  window.closeAllDepartmentsModal = function() {
+    const modal = document.getElementById('allDepartmentsModal');
+    if (modal) {
+      modal.remove();
+      console.log("✅ All departments modal closed");
+    }
+  };
 });

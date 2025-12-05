@@ -291,7 +291,6 @@
           <td>
             <button class="view" data-id="${emp.id}">View</button>
             <button class="edit" data-id="${emp.id}">Edit</button>
-            <button class="delete" data-id="${emp.id}">Delete</button>
           </td>
         `;
         table.appendChild(tr);
